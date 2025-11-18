@@ -346,7 +346,7 @@ export async function updatePost(id: string, postData: Partial<Post>): Promise<P
             .eq('id', id)
             .select()
             .single()
-
+        console.log('Update post data:', data, 'error:', error)
         if (error || !data) return null
         return {
             ...data,

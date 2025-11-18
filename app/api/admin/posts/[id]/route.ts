@@ -102,7 +102,6 @@ export async function PUT(
             }
             console.log(`Deleted ${deletedCount} unused image(s) from storage`)
         }
-
         const post = await updatePost(resolvedParams.id, updateData)
 
         if (!post) {

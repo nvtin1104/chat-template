@@ -101,16 +101,8 @@ export default function EditPostPage() {
         }
     }
 
-    if (loading) {
-        return (
-            <div className="container py-12 px-4">
-                <div className="text-center">Đang tải...</div>
-            </div>
-        )
-    }
-
     return (
-        <main className="container max-w-4xl py-12 px-4">
+        <main className="py-12 px-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Chỉnh sửa bài viết</CardTitle>
@@ -119,97 +111,103 @@ export default function EditPostPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                            <label htmlFor="title" className="text-sm font-medium">
-                                Tiêu đề *
-                            </label>
-                            <Input
-                                id="title"
-                                value={formData.title}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, title: e.target.value })
-                                }
-                                required
-                            />
-                        </div>
+                    {
+                        !loading ? (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label htmlFor="title" className="text-sm font-medium">
+                                        Tiêu đề *
+                                    </label>
+                                    <Input
+                                        id="title"
+                                        value={formData.title}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, title: e.target.value })
+                                        }
+                                        required
+                                    />
+                                </div>
 
-                        <div className="space-y-2">
-                            <label htmlFor="slug" className="text-sm font-medium">
-                                Slug *
-                            </label>
-                            <Input
-                                id="slug"
-                                value={formData.slug}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, slug: e.target.value })
-                                }
-                                required
-                            />
-                        </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="slug" className="text-sm font-medium">
+                                        Slug *
+                                    </label>
+                                    <Input
+                                        id="slug"
+                                        value={formData.slug}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, slug: e.target.value })
+                                        }
+                                        required
+                                    />
+                                </div>
 
-                        <div className="space-y-2">
-                            <label htmlFor="excerpt" className="text-sm font-medium">
-                                Mô tả ngắn
-                            </label>
-                            <Textarea
-                                id="excerpt"
-                                value={formData.excerpt}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, excerpt: e.target.value })
-                                }
-                                rows={3}
-                            />
-                        </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="excerpt" className="text-sm font-medium">
+                                        Mô tả ngắn
+                                    </label>
+                                    <Textarea
+                                        id="excerpt"
+                                        value={formData.excerpt}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, excerpt: e.target.value })
+                                        }
+                                        rows={3}
+                                    />
+                                </div>
 
-                        <ImageUpload
-                            value={formData.coverImage}
-                            onChange={(url) => setFormData({ ...formData, coverImage: url })}
-                            label="Ảnh bìa"
-                            bucket="images"
-                            folder="posts"
-                            enableLibrary
-                        />
+                                <ImageUpload
+                                    value={formData.coverImage}
+                                    onChange={(url) => setFormData({ ...formData, coverImage: url })}
+                                    label="Ảnh bìa"
+                                    bucket="images"
+                                    folder="posts"
+                                    enableLibrary
+                                />
 
-                        <div className="space-y-2">
-                            <label htmlFor="content" className="text-sm font-medium">
-                                Nội dung *
-                            </label>
-                            <CKEditorComponent
-                                value={formData.content}
-                                onChange={(data) => setFormData({ ...formData, content: data })}
-                                placeholder="Nhập nội dung bài viết..."
-                            />
-                        </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="content" className="text-sm font-medium">
+                                        Nội dung *
+                                    </label>
+                                    <CKEditorComponent
+                                        value={formData.content}
+                                        onChange={(data) => setFormData({ ...formData, content: data })}
+                                        placeholder="Nhập nội dung bài viết..."
+                                    />
+                                </div>
 
-                        <div className="flex items-center space-x-2">
-                            <input
-                                type="checkbox"
-                                id="published"
-                                checked={formData.published}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, published: e.target.checked })
-                                }
-                                className="h-4 w-4"
-                            />
-                            <label htmlFor="published" className="text-sm font-medium">
-                                Đã xuất bản
-                            </label>
-                        </div>
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="published"
+                                        checked={formData.published}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, published: e.target.checked })
+                                        }
+                                        className="h-4 w-4"
+                                    />
+                                    <label htmlFor="published" className="text-sm font-medium">
+                                        Đã xuất bản
+                                    </label>
+                                </div>
 
-                        <div className="flex gap-4">
-                            <Button type="submit" disabled={saving}>
-                                {saving ? "Đang lưu..." : "Lưu thay đổi"}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => router.back()}
-                            >
-                                Hủy
-                            </Button>
-                        </div>
-                    </form>
+                                <div className="flex gap-4">
+                                    <Button type="submit" disabled={saving}>
+                                        {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => router.back()}
+                                    >
+                                        Hủy
+                                    </Button>
+                                </div>
+                            </form>
+                        ) : (
+                            <p>Đang tải bài viết...</p>
+                        )
+                    }
                 </CardContent>
             </Card>
         </main>

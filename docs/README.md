@@ -127,7 +127,7 @@ NEXTAUTH_SECRET=your-local-secret-key-min-32-chars
 
 # Application URLs
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=http://localhost:3000
 
 # Admin User Configuration (for init-admin script)
 ADMIN_EMAIL=admin@example.com
@@ -347,7 +347,7 @@ NEXTAUTH_SECRET=production-secret-key-min-32-chars-secure
 
 # Application URLs
 NEXT_PUBLIC_BASE_URL=https://your-domain.vercel.app
-NEXT_PUBLIC_API_URL=https://your-domain.vercel.app/api
+NEXT_PUBLIC_API_URL=https://your-domain.vercel.app
 
 # Admin User Configuration
 ADMIN_EMAIL=admin@yourdomain.com
@@ -482,7 +482,7 @@ Tạo file `vercel.json` trong thư mục `client/`:
   },
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -596,47 +596,47 @@ psql -h db.xxxxx.supabase.co -U postgres -d postgres < backup.sql
 
 ### Public APIs
 
-**GET /api/public/posts**
+**GET /public/posts**
 - Lấy danh sách bài viết published
 - Query: `?limit=10&offset=0`
 
-**GET /api/public/posts/[slug]**
+**GET /public/posts/[slug]**
 - Lấy chi tiết bài viết theo slug
 
-**GET /api/public/slides**
+**GET /public/slides**
 - Lấy slides active
 
-**GET /api/public/site-info**
+**GET /public/site-info**
 - Lấy thông tin website
 
-**POST /api/public/chat**
+**POST /public/chat**
 - Chat với AI
 - Body: `{ message: string, conversationId?: string }`
 
 ### Admin APIs (Protected)
 
-**GET /api/admin/posts**
+**GET /admin/posts**
 - Lấy tất cả bài viết (kể cả draft)
 
-**POST /api/admin/posts**
+**POST /admin/posts**
 - Tạo bài viết mới
 - Body: `{ title, slug, content, coverImage, status }`
 
-**PUT /api/admin/posts/[id]**
+**PUT /admin/posts/[id]**
 - Update bài viết
 
-**DELETE /api/admin/posts/[id]**
+**DELETE /admin/posts/[id]**
 - Xóa bài viết
 
-**GET /api/admin/images**
+**GET /admin/images**
 - Lấy danh sách ảnh từ Storage
 - Query: `?bucket=images&prefix=posts&limit=100`
 
-**DELETE /api/admin/images/delete**
+**DELETE /admin/images/delete**
 - Xóa ảnh từ Storage
 - Query: `?bucket=images&path=posts/image.jpg`
 
-**POST /api/admin/upload**
+**POST /admin/upload**
 - Upload ảnh lên Storage
 - FormData: `file`, `bucket`, `folder`
 

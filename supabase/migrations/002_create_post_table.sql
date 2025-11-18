@@ -22,6 +22,7 @@ CREATE INDEX IF NOT EXISTS "Post_slug_idx" ON "Post"("slug");
 CREATE INDEX IF NOT EXISTS "Post_published_idx" ON "Post"("published");
 
 -- Trigger for updatedAt
+DROP TRIGGER IF EXISTS update_post_updated_at ON "Post";
 CREATE TRIGGER update_post_updated_at BEFORE UPDATE ON "Post"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

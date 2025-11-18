@@ -20,11 +20,17 @@ CREATE TABLE IF NOT EXISTS "User" (
 -- Index
 CREATE INDEX IF NOT EXISTS "User_email_idx" ON "User"("email");
 
--- Function to update updatedAt timestamp
+-- Function to update updatedAt timestamp (handles both camelCase and snake_case)
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW."updatedAt" = NOW();
+    -- Handle camelCase for Post, User, SiteInfo
+    IF TG_TABLE_NAME = 'Post' OR TG_TABLE_NAME = 'User' OR TG_TABLE_NAME = 'SiteInfo' THEN
+        NEW."updatedAt" = NOW();
+    -- Handle snake_case for Slides
+    ELSIF TG_TABLE_NAME = 'Slides' THEN
+        NEW.updated_at = NOW();
+    END IF;
     RETURN NEW;
 END;
 $$ language 'plpgsql';

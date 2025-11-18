@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS "Slides" (
 CREATE INDEX IF NOT EXISTS idx_slides_order ON "Slides"("order");
 CREATE INDEX IF NOT EXISTS idx_slides_active ON "Slides"(active);
 
--- Trigger for updated_at (reuse function if exists)
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS update_slides_updated_at ON "Slides";
 CREATE TRIGGER update_slides_updated_at BEFORE UPDATE ON "Slides"
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS "SiteInfo" (
 );
 
 -- Trigger for updatedAt
+DROP TRIGGER IF EXISTS update_siteinfo_updated_at ON "SiteInfo";
 CREATE TRIGGER update_siteinfo_updated_at BEFORE UPDATE ON "SiteInfo"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

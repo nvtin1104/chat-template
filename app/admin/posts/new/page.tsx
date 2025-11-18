@@ -59,7 +59,7 @@ export default function NewPostPage() {
     }
 
     return (
-        <main className="container max-w-4xl py-12 px-4">
+        <main className=" py-12 px-4">
             <Card>
                 <CardHeader>
                     <CardTitle>Tạo bài viết mới</CardTitle>

@@ -13,7 +13,6 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (res) => res,
   (error) => {
-    console.error("Axios error:", error.response?.data ?? error.message)
     return Promise.reject(error)
   }
 )
