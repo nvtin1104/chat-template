@@ -46,7 +46,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import type { SiteInfo } from '@/lib/site-info'
 
 type FeatureFormValues = {
     icon: string
@@ -152,8 +151,6 @@ export default function FeaturesPage() {
     const [isSaving, setIsSaving] = useState(false)
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [editingFeature, setEditingFeature] = useState<Feature | null>(null)
-    const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null)
-    const [isSectionSaving, setIsSectionSaving] = useState(false)
     const {
         control,
         register,
@@ -189,7 +186,6 @@ export default function FeaturesPage() {
 
     useEffect(() => {
         fetchFeatures()
-        fetchSectionInfo()
     }, [])
 
     const fetchFeatures = async () => {
@@ -203,18 +199,6 @@ export default function FeaturesPage() {
             toast.error('Không thể tải dữ liệu')
         } finally {
             setIsLoading(false)
-        }
-    }
-
-    const fetchSectionInfo = async () => {
-        try {
-            const res = await fetch('/api/admin/site-info')
-            if (res.ok) {
-                const data = await res.json()
-                setSiteInfo(data)
-            }
-        } catch (error) {
-            toast.error('Không thể tải tiêu đề section')
         }
     }
 
@@ -350,33 +334,6 @@ export default function FeaturesPage() {
         }
     }
 
-    const handleSectionInfoChange = (field: 'featuresTitle' | 'featuresDescription') => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setSiteInfo((prev) => (prev ? { ...prev, [field]: e.target.value } : prev))
-    }
-
-    const handleSectionInfoSave = async () => {
-        if (!siteInfo) return
-        setIsSectionSaving(true)
-        try {
-            const res = await fetch('/api/admin/site-info', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(siteInfo),
-            })
-
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}))
-                throw new Error(data.error || 'Không thể lưu nội dung section')
-            }
-
-            toast.success('Đã lưu nội dung section')
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Không thể lưu nội dung section')
-        } finally {
-            setIsSectionSaving(false)
-        }
-    }
-
     const renderFeatureSection = () => {
         if (isLoading) {
             return (
@@ -427,39 +384,6 @@ export default function FeaturesPage() {
                     <Plus className="h-4 w-4 mr-2" />
                     Thêm mới
                 </Button>
-            </div>
-
-            <div className="mb-6 rounded-xl border bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <div>
-                        <p className="text-sm font-semibold text-gray-700 uppercase">Nội dung hiển thị trang chủ</p>
-                        <p className="text-sm text-gray-500">Chỉnh sửa tiêu đề & mô tả của section tính năng.</p>
-                    </div>
-                    <Button type="button" onClick={handleSectionInfoSave} disabled={!siteInfo || isSectionSaving}>
-                        {isSectionSaving ? 'Đang lưu...' : 'Lưu nội dung'}
-                    </Button>
-                </div>
-                <div className="grid gap-4">
-                    <div className="space-y-1">
-                        <Label>Tiêu đề</Label>
-                        <Input
-                            value={siteInfo?.featuresTitle ?? ''}
-                            onChange={handleSectionInfoChange('featuresTitle')}
-                            placeholder="Tại sao chọn AI nha khoa?"
-                            disabled={!siteInfo}
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <Label>Mô tả</Label>
-                        <Textarea
-                            value={siteInfo?.featuresDescription ?? ''}
-                            onChange={handleSectionInfoChange('featuresDescription')}
-                            placeholder="Nền tảng AI..."
-                            rows={3}
-                            disabled={!siteInfo}
-                        />
-                    </div>
-                </div>
             </div>
 
             {renderFeatureSection()}

@@ -23,10 +23,9 @@ export default async function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center">
       <SlideShow />
       <Banner />
-      <ChatBar />
-
       <FeaturesSection />
       <ReasonsSection />
+      <ChatBar />
 
       <section className="container py-12 px-4">
         <div className="mb-8 ">

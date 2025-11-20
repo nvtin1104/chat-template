@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Swiper, SwiperSlide } from "swiper/react"
@@ -17,10 +17,24 @@ import "swiper/css/effect-fade"
 export default function SlideShow() {
     const [slides, setSlides] = useState<Slide[]>([])
     const [loading, setLoading] = useState(true)
+    const [slideHeight, setSlideHeight] = useState<number>(0)
+    const slideContainerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         fetchSlides()
     }, [])
+
+    useEffect(() => {
+        const updateHeight = () => {
+            if (slideContainerRef.current) {
+                setSlideHeight(slideContainerRef.current.offsetHeight)
+            }
+        }
+
+        updateHeight()
+        window.addEventListener('resize', updateHeight)
+        return () => window.removeEventListener('resize', updateHeight)
+    }, [slides])
 
     const fetchSlides = async () => {
         try {
@@ -38,7 +52,7 @@ export default function SlideShow() {
 
     if (loading) {
         return (
-            <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[650px] bg-gray-200 animate-pulse" />
+            <div className="w-full h-[140px] sm:h-[180px] md:h-[240px] lg:h-[300px] xl:h-[320px] bg-gray-200 animate-pulse" />
         )
     }
 
@@ -56,61 +70,72 @@ export default function SlideShow() {
     }
 
     return (
-        <div className="w-full container mx-auto pt-16 px-0 sm:px-4">
-            <div className="relative h-[240px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[650px] rounded-none sm:rounded-[20px] md:mt-2 overflow-hidden bg-gray-900"> 
-                <Swiper
-                    modules={[Navigation, Pagination, Autoplay, EffectFade]}
-                    navigation
-                    pagination={{
-                        clickable: true,
-                        dynamicBullets: true,
-                    }}
-                    autoplay={{
-                        delay: 5000,
-                        disableOnInteraction: false,
-                        pauseOnMouseEnter: true,
-                    }}
-                    effect="fade"
-                    fadeEffect={{
-                        crossFade: true,
-                    }}
-                    loop={slides.length > 1}
-                    speed={1000}
-                    className="w-full h-full"
-                    style={{
-                        "--swiper-navigation-color": "#fff",
-                        "--swiper-pagination-color": "#fff",
-                        "--swiper-navigation-size": "44px",
-                    } as React.CSSProperties}
+        <div className="w-full pt-16 px-0">
+            <div className="w-full container mx-auto px-0 sm:px-4">
+                <div
+                    ref={slideContainerRef}
+                    className="relative rounded-none sm:rounded-[20px] md:mt-2 overflow-hidden bg-gray-900 w-full"
                 >
-                    {slides.map((slide, index) => (
-                        <SwiperSlide key={slide.id}>
-                            <SlideContent slide={slide}>
-                                <div className="relative w-full h-full">
-                                    <Image
-                                        src={getImageUrl(slide.image)}
-                                        alt={slide.title}
-                                        fill
-                                        className="object-cover"
-                                        priority={index === 0}
-                                        sizes="100vw"
-                                    />
-                                    {/* Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                                    {/* Title */}
-                                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 lg:p-12 z-10">
-                                        <div className="container mx-auto">
-                                            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white animate-fade-in leading-tight">
-                                                {slide.title}
-                                            </h2>
+                    <Swiper
+                        modules={[Navigation, Pagination, Autoplay, EffectFade]}
+                        navigation
+                        pagination={{
+                            clickable: true,
+                            dynamicBullets: true,
+                        }}
+                        autoplay={{
+                            delay: 5000,
+                            disableOnInteraction: false,
+                            pauseOnMouseEnter: true,
+                        }}
+                        effect="fade"
+                        fadeEffect={{
+                            crossFade: true,
+                        }}
+                        loop={slides.length > 1}
+                        speed={1000}
+                        className="w-full"
+                        style={{
+                            "--swiper-navigation-color": "#fff",
+                            "--swiper-pagination-color": "#fff",
+                            "--swiper-navigation-size": "44px",
+                        } as React.CSSProperties}
+                    >
+                        {slides.map((slide, index) => (
+                            <SwiperSlide key={slide.id}>
+                                <SlideContent slide={slide}>
+                                    <div className="relative w-full">
+                                        <div className="relative w-full">
+                                            <Image
+                                                src={getImageUrl(slide.image)}
+                                                alt={slide.title}
+                                                width={1920}
+                                                height={1080}
+                                                className="w-full h-auto object-contain"
+                                                priority={index === 0}
+                                                sizes="100vw"
+                                                style={{
+                                                    width: '100%',
+                                                    height: 'auto',
+                                                    display: 'block'
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 lg:p-12 z-10 pointer-events-none">
+                                            <div className="container mx-auto">
+                                                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white animate-fade-in leading-tight">
+                                                    {slide.title}
+                                                </h2>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </SlideContent>
-                        </SwiperSlide>
-                    ))}
-                </Swiper>
-                <div className="pointer-events-none absolute inset-0 rounded-none sm:rounded-[20px]" />
+                                </SlideContent>
+                            </SwiperSlide>
+                        ))}
+                    </Swiper>
+                    <div className="pointer-events-none absolute inset-0 rounded-none sm:rounded-[20px]" />
+                </div>
             </div>
 
             <style jsx global>{`

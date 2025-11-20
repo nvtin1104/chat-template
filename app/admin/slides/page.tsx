@@ -272,9 +272,7 @@ export default function AdminSlidesPage() {
                             className="cursor-move hover:shadow-md transition-shadow"
                         >
                             <CardContent className="p-0">
-                                {/* Mobile Layout */}
                                 <div className="sm:hidden">
-                                    {/* Image Header */}
                                     <div className="relative w-full h-32 bg-muted">
                                         <Image
                                             src={getImageUrl(slide.image)}
@@ -303,7 +301,6 @@ export default function AdminSlidesPage() {
                                         </div>
                                     </div>
 
-                                    {/* Content */}
                                     <div className="p-3 space-y-3">
                                         <div>
                                             <h3 className="font-semibold text-sm line-clamp-2 mb-1">
@@ -317,7 +314,6 @@ export default function AdminSlidesPage() {
                                             )}
                                         </div>
 
-                                        {/* Actions */}
                                         <div className="grid grid-cols-3 gap-2">
                                             <Button
                                                 variant={slide.active ? "default" : "outline"}
@@ -493,13 +489,12 @@ export default function AdminSlidesPage() {
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
                                     <p className="text-xs font-semibold text-blue-900">📐 Tỉ lệ ảnh khuyên dùng:</p>
                                     <ul className="text-xs text-blue-800 space-y-0.5 ml-4">
-                                        <li>• <strong>Desktop:</strong> 16:9 (1920×1080px hoặc 1600×900px)</li>
-                                        <li>• <strong>Mobile:</strong> 4:3 hoặc 3:2</li>
+                                        <li>• <strong>Kích thước chuẩn:</strong> 1920×480px (tỉ lệ 4:1)</li>
                                         <li>• <strong>Kích thước tối đa:</strong> 2MB</li>
                                         <li>• <strong>Format:</strong> JPG, PNG, WebP</li>
                                     </ul>
                                     <p className="text-xs text-blue-700 italic mt-2">
-                                        💡 Tip: Sử dụng ảnh ngang (landscape) để hiển thị tốt nhất
+                                        💡 Tip: Sử dụng ảnh ngang (landscape) với kích thước 1920×480px để hiển thị tốt nhất
                                     </p>
                                 </div>
                             </div>
