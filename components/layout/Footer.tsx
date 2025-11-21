@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, Send } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
+import { convertColorForCSS } from "@/lib/color-utils"
 
 export default function ChatBar() {
     const [query, setQuery] = useState("")
@@ -19,7 +20,10 @@ export default function ChatBar() {
 
         <div>
             <div className="h-32" />
-            <section className="bg-gradient-to-b fixed bottom-0 left-0 right-0 from-transparent to-blue-50 w-full py-8 px-4">
+            <section className=" fixed bottom-0 left-0 right-0  w-full py-8 px-4"
+                style={{
+                    background: "linear-gradient(to top, var(--home-gradient-from), transparent)",
+                }}>
                 <div className="container mx-auto">
                     <div className="flex flex-col gap-2 sm:gap-3 md:flex-row md:items-center p-3 sm:p-4 border rounded-xl sm:rounded-2xl bg-white">
                         <div className="flex items-center gap-2 flex-1 w-full min-w-0">
@@ -49,7 +53,7 @@ export default function ChatBar() {
                     </div>
                 </div>
             </section>
-        </div>
+        </div >
     )
 }
 

@@ -1,14 +1,23 @@
+"use client"
+
 import { getActiveReasons, getSiteInfoRecord } from '@/lib/db'
 import { cn } from '@/lib/utils'
+import { convertColorForCSS } from '@/lib/color-utils'
+import { useEffect, useState } from 'react'
 
 const FALLBACK_TITLE = 'Số liệu ấn tượng'
 const FALLBACK_DESCRIPTION = 'Những con số chứng minh chất lượng dịch vụ của chúng tôi'
 
-export default async function ReasonsSection() {
-    const [reasons, siteInfo] = await Promise.all([
-        getActiveReasons(),
-        getSiteInfoRecord(),
-    ])
+export default function ReasonsSection() {
+    const [reasons, setReasons] = useState<any[]>([])
+    const [siteInfo, setSiteInfo] = useState<any>(null)
+
+    useEffect(() => {
+        Promise.all([getActiveReasons(), getSiteInfoRecord()]).then(([reasonsData, info]) => {
+            setReasons(reasonsData)
+            setSiteInfo(info)
+        })
+    }, [])
 
     if (!reasons.length) return null
 
@@ -17,11 +26,18 @@ export default async function ReasonsSection() {
     const colClass = reasons.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'
 
     return (
-        <section className="bg-gradient-to-b from-white to-blue-50 w-full py-8 px-4">
+        <section 
+            className="w-full py-8 px-4"
+            style={{
+                background: `linear-gradient(to top, ${convertColorForCSS("var(--home-gradient-from)")}, ${convertColorForCSS("var(--home-gradient-to)")})`,
+            }}
+        >
             <div className="container mx-auto">
                 <div className="text-center mb-12 space-y-3">
-                    <h2 className="text-4xl font-bold">{title}</h2>
-                    <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+                    <h2 className="text-4xl font-bold" style={{ color: "var(--home-text)" }}>
+                        {title}
+                    </h2>
+                    <p className="text-lg text-slate-600 max-w-3xl mx-auto" style={{ color: "var(--home-text)" }}>
                         {description}
                     </p>
                 </div>

@@ -5,6 +5,7 @@ import { Providers } from "@/components/Providers";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { SiteInfoProvider } from "@/components/providers/SiteInfoProvider";
+import { ColorThemeProvider } from "@/components/providers/ColorThemeProvider";
 import { getSiteInfo } from "@/lib/site-info";
 
 const geistSans = Geist({
@@ -76,13 +77,15 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} `}
       >
         <SiteInfoProvider siteInfo={siteInfo}>
-          <Providers>
-            <div className="flex flex-col min-h-screen">
-              <Header />
-              {children}
-              <Footer />
-            </div>
-          </Providers>
+          <ColorThemeProvider>
+            <Providers>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                {children}
+                <Footer />
+              </div>
+            </Providers>
+          </ColorThemeProvider>
         </SiteInfoProvider>
       </body>
     </html>

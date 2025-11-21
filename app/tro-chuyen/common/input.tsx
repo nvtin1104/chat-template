@@ -85,7 +85,13 @@ export function ChatInput({
     return (
         <div className="w-full max-w-3xl mx-auto px-2 sm:px-4 pb-2 sm:pb-4">
             <form onSubmit={handleSubmit} className="relative">
-                <div className="relative flex flex-col gap-2 rounded-2xl sm:rounded-[28px] md:rounded-[32px] border border-border bg-card shadow-sm overflow-hidden">
+                <div 
+                    className="relative flex flex-col gap-2 rounded-2xl sm:rounded-[28px] md:rounded-[32px] border shadow-sm overflow-hidden"
+                    style={{
+                        backgroundColor: "var(--chat-input-bg)",
+                        borderColor: "var(--chat-input-border)",
+                    }}
+                >
                     <div className="flex items-end gap-1.5 sm:gap-2 p-2 sm:p-3">
                         {displayLogo && (
                             <div className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 flex items-center justify-center rounded-full overflow-hidden bg-muted">
@@ -114,10 +120,13 @@ export function ChatInput({
                             rows={1}
                             className={cn(
                                 "flex-1 resize-none bg-transparent px-0 py-1.5 sm:py-2",
-                                "text-sm sm:text-base text-foreground placeholder:text-muted-foreground",
+                                "text-sm sm:text-base",
                                 "focus:outline-none disabled:opacity-50",
                                 "max-h-[200px] overflow-y-auto",
                             )}
+                            style={{
+                                color: "var(--chat-input-text)",
+                            }}
                         />
 
                         {isGenerating ? (
@@ -125,7 +134,11 @@ export function ChatInput({
                                 type="button"
                                 size="icon"
                                 onClick={onStop}
-                                className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full bg-foreground text-background hover:bg-foreground/90"
+                                className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full"
+                                style={{
+                                    backgroundColor: "var(--button)",
+                                    color: "var(--button-text)",
+                                }}
                             >
                                 <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
                                 <span className="sr-only">Dừng</span>
@@ -135,7 +148,11 @@ export function ChatInput({
                                 type="submit"
                                 size="icon"
                                 disabled={!message.trim() || disabled}
-                                className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-30"
+                                className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full disabled:opacity-30"
+                                style={{
+                                    backgroundColor: "var(--button)",
+                                    color: "var(--button-text)",
+                                }}
                             >
                                 <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 <span className="sr-only">Gửi tin nhắn</span>
@@ -144,7 +161,10 @@ export function ChatInput({
                     </div>
                 </div>
 
-                <p className="text-[10px] sm:text-xs text-center text-muted-foreground mt-2 sm:mt-3 px-2 sm:px-4">
+                <p 
+                    className="text-[10px] sm:text-xs text-center mt-2 sm:mt-3 px-2 sm:px-4"
+                    style={{ color: "var(--chat-input-placeholder)" }}
+                >
                     Nhập nội dung của bạn vào đây để bắt đầu trò chuyện
                 </p>
             </form>

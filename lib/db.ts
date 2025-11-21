@@ -1061,3 +1061,333 @@ export async function reorderReasons(reasonOrders: { id: string; order: number }
     }
 }
 
+// ============ COLOR CONFIG ============
+
+export interface ColorConfig {
+    id: string
+    key: string
+    value: string
+    rgbValue?: string | null
+    description?: string | null
+    createdAt: Date
+    updatedAt: Date
+}
+
+const COLOR_CONFIG_COLUMNS = 'id, "key", value, "rgbValue", description, "createdAt", "updatedAt"'
+
+function mapColorConfig(data: any): ColorConfig {
+    return {
+        id: data.id,
+        key: data.key,
+        value: data.value,
+        rgbValue: data.rgbValue,
+        description: data.description,
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
+    }
+}
+
+export async function getAllColorConfigs(): Promise<ColorConfig[]> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('ColorConfig')
+            .select(COLOR_CONFIG_COLUMNS)
+            .order('key', { ascending: true })
+
+        if (error || !data) return []
+        return data.map(mapColorConfig)
+    } catch (error) {
+        console.error('Error fetching color configs:', error)
+        return []
+    }
+}
+
+export async function getColorConfigByKey(key: string): Promise<ColorConfig | null> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('ColorConfig')
+            .select(COLOR_CONFIG_COLUMNS)
+            .eq('key', key)
+            .single()
+
+        if (error || !data) return null
+        return mapColorConfig(data)
+    } catch (error) {
+        console.error('Error fetching color config:', error)
+        return null
+    }
+}
+
+export async function getColorConfigsByKeys(keys: string[]): Promise<Record<string, string>> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('ColorConfig')
+            .select('"key", value')
+            .in('key', keys)
+
+        if (error || !data) return {}
+
+        const result: Record<string, string> = {}
+        data.forEach((item) => {
+            result[item.key] = item.value
+        })
+        return result
+    } catch (error) {
+        console.error('Error fetching color configs by keys:', error)
+        return {}
+    }
+}
+
+export async function createColorConfig(config: {
+    key: string
+    value: string
+    rgbValue?: string
+    description?: string
+}): Promise<ColorConfig | null> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('ColorConfig')
+            .insert({
+                key: config.key,
+                value: config.value,
+                rgbValue: config.rgbValue || null,
+                description: config.description || null,
+            })
+            .select(COLOR_CONFIG_COLUMNS)
+            .single()
+
+        if (error || !data) return null
+        return mapColorConfig(data)
+    } catch (error) {
+        console.error('Error creating color config:', error)
+        return null
+    }
+}
+
+export async function updateColorConfig(
+    key: string,
+    config: Partial<Pick<ColorConfig, 'value' | 'rgbValue' | 'description'>>
+): Promise<ColorConfig | null> {
+    try {
+        const supabase = await getSupabaseClient()
+        const updateData: any = {}
+        if (config.value !== undefined) updateData.value = config.value
+        if (config.rgbValue !== undefined) updateData.rgbValue = config.rgbValue
+        if (config.description !== undefined) updateData.description = config.description
+
+        const { data, error } = await supabase
+            .from('ColorConfig')
+            .update(updateData)
+            .eq('key', key)
+            .select(COLOR_CONFIG_COLUMNS)
+            .single()
+
+        if (error || !data) return null
+        return mapColorConfig(data)
+    } catch (error) {
+        console.error('Error updating color config:', error)
+        return null
+    }
+}
+
+export async function upsertColorConfig(config: {
+    key: string
+    value: string
+    rgbValue?: string
+    description?: string
+}): Promise<ColorConfig | null> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('ColorConfig')
+            .upsert(
+                {
+                    key: config.key,
+                    value: config.value,
+                    rgbValue: config.rgbValue || null,
+                    description: config.description || null,
+                },
+                {
+                    onConflict: 'key',
+                }
+            )
+            .select(COLOR_CONFIG_COLUMNS)
+            .single()
+
+        if (error) {
+            console.error('Error upserting color config:', error)
+            console.error('Config:', config)
+            return null
+        }
+
+        if (!data) {
+            console.error('No data returned from upsert')
+            return null
+        }
+
+        return mapColorConfig(data)
+    } catch (error) {
+        console.error('Error upserting color config:', error)
+        console.error('Config:', config)
+        return null
+    }
+}
+
+export async function deleteColorConfig(key: string): Promise<boolean> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { error } = await supabase.from('ColorConfig').delete().eq('key', key)
+
+        return !error
+    } catch (error) {
+        console.error('Error deleting color config:', error)
+        return false
+    }
+}
+
+// ============ CONTACT ============
+
+export interface Contact {
+    id: string
+    name: string
+    email: string
+    phone?: string | null
+    subject: string
+    message: string
+    read: boolean
+    createdAt: Date
+    updatedAt: Date
+}
+
+const CONTACT_COLUMNS = 'id, name, email, phone, subject, message, read, "createdAt", "updatedAt"'
+
+function mapContact(data: any): Contact {
+    return {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        subject: data.subject,
+        message: data.message,
+        read: data.read,
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
+    }
+}
+
+export async function createContact(contact: {
+    name: string
+    email: string
+    phone?: string
+    subject: string
+    message: string
+}): Promise<Contact | null> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('Contact')
+            .insert({
+                name: contact.name,
+                email: contact.email,
+                phone: contact.phone || null,
+                subject: contact.subject,
+                message: contact.message,
+            })
+            .select(CONTACT_COLUMNS)
+            .single()
+        console.log(data, error)
+
+        if (error || !data) return null
+        return mapContact(data)
+    } catch (error) {
+        console.error('Error creating contact:', error)
+        return null
+    }
+}
+
+export async function getAllContacts(): Promise<Contact[]> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('Contact')
+            .select(CONTACT_COLUMNS)
+            .order('createdAt', { ascending: false })
+
+        if (error || !data) return []
+        return data.map(mapContact)
+    } catch (error) {
+        console.error('Error fetching contacts:', error)
+        return []
+    }
+}
+
+export async function getContactById(id: string): Promise<Contact | null> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('Contact')
+            .select(CONTACT_COLUMNS)
+            .eq('id', id)
+            .single()
+
+        if (error || !data) return null
+        return mapContact(data)
+    } catch (error) {
+        console.error('Error fetching contact:', error)
+        return null
+    }
+}
+
+export async function updateContact(
+    id: string,
+    updates: Partial<Pick<Contact, 'read'>>
+): Promise<Contact | null> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { data, error } = await supabase
+            .from('Contact')
+            .update(updates)
+            .eq('id', id)
+            .select(CONTACT_COLUMNS)
+            .single()
+
+        if (error || !data) return null
+        return mapContact(data)
+    } catch (error) {
+        console.error('Error updating contact:', error)
+        return null
+    }
+}
+
+export async function deleteContact(id: string): Promise<boolean> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { error } = await supabase.from('Contact').delete().eq('id', id)
+
+        return !error
+    } catch (error) {
+        console.error('Error deleting contact:', error)
+        return false
+    }
+}
+
+export async function getUnreadContactsCount(): Promise<number> {
+    try {
+        const supabase = await getSupabaseClient()
+        const { count, error } = await supabase
+            .from('Contact')
+            .select('*', { count: 'exact', head: true })
+            .eq('read', false)
+
+        if (error) return 0
+        return count || 0
+    } catch (error) {
+        console.error('Error counting unread contacts:', error)
+        return 0
+    }
+}
+

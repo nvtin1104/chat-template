@@ -235,7 +235,13 @@ const ChatContainer = () => {
                                 message.sender === 'user' ? (
                                     <div className="mb-4 px-[16px] text-left" key={index}>
                                         <div className="flex items-start justify-end">
-                                            <div className="relative flex max-w-[529px] flex-row items-center justify-center gap-x-[20px] bg-gray-200 py-2 px-4 shadow-sm w-fit rounded-[12px]">
+                                            <div 
+                                                className="relative flex max-w-[529px] flex-row items-center justify-center gap-x-[20px] py-2 px-4 shadow-sm w-fit rounded-[12px]"
+                                                style={{
+                                                    backgroundColor: "var(--chat-user-message-bg)",
+                                                    color: "var(--chat-user-message-text)",
+                                                }}
+                                            >
                                                 <div className="markdown prose w-full whitespace-pre-wrap break-words text-[16px]">
                                                     {message.message}
                                                 </div>

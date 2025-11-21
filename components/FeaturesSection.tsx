@@ -1,22 +1,33 @@
+"use client"
+
 import Image from 'next/image'
 import { getActiveFeatures, getSiteInfoRecord } from '@/lib/db'
+import { convertColorForCSS } from '@/lib/color-utils'
+import { useEffect, useState } from 'react'
 
 const FALLBACK_TITLE = 'Tại sao chọn AI nha khoa?'
 const FALLBACK_DESCRIPTION = 'Nền tảng AI cơ mối phần khoa, tư vấn chăm sóc răng miệng từ đội ngũ bác sĩ chuyên môn'
 
-export default async function FeaturesSection() {
-    const [features, siteInfo] = await Promise.all([
-        getActiveFeatures(),
-        getSiteInfoRecord(),
-    ])
+export default function FeaturesSection() {
+    const [features, setFeatures] = useState<any[]>([])
+    const [siteInfo, setSiteInfo] = useState<any>(null)
+
+    useEffect(() => {
+        Promise.all([getActiveFeatures(), getSiteInfoRecord()]).then(([feats, info]) => {
+            setFeatures(feats)
+            setSiteInfo(info)
+        })
+    }, [])
 
     if (!features.length) return null
 
-    const title = siteInfo?.featuresTitle || FALLBACK_TITLE
-    const description = siteInfo?.featuresDescription || FALLBACK_DESCRIPTION
-
     return (
-        <section className="bg-gradient-to-t from-white to-blue-50 w-full py-8 px-4">
+        <section 
+            className="w-full py-8 px-4"
+            style={{
+                background: `linear-gradient(to bottom, ${convertColorForCSS("var(--home-gradient-from)")}, ${convertColorForCSS("var(--home-gradient-to)")})`,
+            }}
+        >
             <div className="container mx-auto">
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {features.map((feature) => (

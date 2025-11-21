@@ -34,9 +34,13 @@ export default function Header() {
     if (pathname?.startsWith("/admin")) {
         return null
     }
+
     return (
-        <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex justify-center">
-            <div className="container flex h-16 items-center justify-between px-4">
+        <header
+            className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex justify-center"
+            style={{ backgroundColor: "var(--header-bg)" }}
+        >
+            <div className="container flex h-16 items-center justify-between px-4" style={{ color: "var(--header-text)" }}>
                 <Link href="/" className="flex items-center space-x-2">
                     {siteInfo.logo ? (
                         <span className="relative h-8 w-8 overflow-hidden rounded-full border border-border">

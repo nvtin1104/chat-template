@@ -12,6 +12,8 @@ import {
   IconPhoto,
   IconPhotoUp,
   IconUserCircle,
+  IconPalette,
+  IconMail,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/admin/nav-main"
@@ -48,6 +50,11 @@ const data = {
       url: "/admin/posts",
       icon: IconFile,
     },
+    {
+      title: "Liên hệ",
+      url: "/admin/contacts",
+      icon: IconMail,
+    },
   ],
   navSecondary: [
     {
@@ -59,6 +66,11 @@ const data = {
       title: "Cài đặt",
       url: "/admin/settings",
       icon: IconSettings,
+    },
+    {
+      title: "Màu sắc",
+      url: "/admin/colors",
+      icon: IconPalette,
     },
     {
       title: "Thư viện ảnh",
@@ -75,7 +87,7 @@ const data = {
     {
       name: "Tính năng",
       url: "/admin/features",
-      icon: IconFileAi,
+      icon: IconFileDescription,
     },
     {
       name: "Lý do chọn",

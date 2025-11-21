@@ -1,8 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import { useSiteInfo } from "@/components/providers/SiteInfoProvider"
-import { Facebook, Instagram, Linkedin, Twitter, Youtube, Music2, Mail, Phone, MapPin } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Facebook, Instagram, Linkedin, Twitter, Youtube, Music2, Mail, Phone, MapPin, Send } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/toast"
+import { Spinner } from "@/components/ui/spinner"
 import type { ElementType } from "react"
 
 type SocialKey = "facebook" | "instagram" | "twitter" | "linkedin" | "youtube" | "tiktok"
@@ -19,6 +26,55 @@ const socialConfigs: Array<{ key: SocialKey; label: string; icon: ElementType }>
 export default function ContactPage() {
     const siteInfo = useSiteInfo()
     const socials = socialConfigs.filter(({ key }) => siteInfo[key])
+    const { showToast } = useToast()
+    const [submitting, setSubmitting] = useState(false)
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
+    })
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSubmitting(true)
+
+        try {
+            const response = await fetch("/api/public/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                showToast("success", data.message || "Gửi liên hệ thành công!")
+                setFormData({
+                    name: "",
+                    email: "",
+                    phone: "",
+                    subject: "",
+                    message: "",
+                })
+            } else {
+                showToast("error", data.error || "Không thể gửi liên hệ. Vui lòng thử lại.")
+            }
+        } catch (error) {
+            console.error("Error submitting contact:", error)
+            showToast("error", "Có lỗi xảy ra khi gửi liên hệ")
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setFormData((prev) => ({
+            ...prev,
+            [e.target.name]: e.target.value,
+        }))
+    }
 
     return (
         <div className="pt-16 pb-12">
@@ -32,12 +88,116 @@ export default function ContactPage() {
                     </p>
                 </div>
 
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-4xl mx-auto grid gap-6 md:grid-cols-2">
+                    {/* Contact Form */}
                     <Card>
-                        <CardContent className="p-6 sm:p-8 space-y-6">
-                            <div>
-                                <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-6">Thông tin liên hệ</h2>
-                                <div className="space-y-4">
+                        <CardHeader>
+                            <CardTitle>Gửi tin nhắn cho chúng tôi</CardTitle>
+                            <CardDescription>
+                                Điền thông tin vào form bên dưới và chúng tôi sẽ phản hồi sớm nhất có thể.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">
+                                        Họ và tên <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="name"
+                                        name="name"
+                                        type="text"
+                                        required
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        placeholder="Nhập họ và tên của bạn"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">
+                                        Email <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        required
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="your.email@example.com"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Số điện thoại</Label>
+                                    <Input
+                                        id="phone"
+                                        name="phone"
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        placeholder="0123456789"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="subject">
+                                        Tiêu đề <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="subject"
+                                        name="subject"
+                                        type="text"
+                                        required
+                                        value={formData.subject}
+                                        onChange={handleChange}
+                                        placeholder="Tiêu đề tin nhắn"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="message">
+                                        Nội dung <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Textarea
+                                        id="message"
+                                        name="message"
+                                        required
+                                        value={formData.message}
+                                        onChange={handleChange}
+                                        placeholder="Nhập nội dung tin nhắn của bạn..."
+                                        rows={6}
+                                    />
+                                </div>
+
+                                <Button type="submit" disabled={submitting} className="w-full">
+                                    {submitting ? (
+                                        <>
+                                            <Spinner className="mr-2 h-4 w-4" />
+                                            Đang gửi...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="mr-2 h-4 w-4" />
+                                            Gửi tin nhắn
+                                        </>
+                                    )}
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+
+                    {/* Contact Information */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Thông tin liên hệ</CardTitle>
+                            <CardDescription>
+                                Bạn cũng có thể liên hệ với chúng tôi qua các phương thức sau:
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-4">
                                     {siteInfo.address && (
                                         <div className="flex items-start gap-3">
                                             <MapPin className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -87,7 +247,6 @@ export default function ContactPage() {
                                             </div>
                                         </div>
                                     )}
-                                </div>
                             </div>
 
                             {socials.length > 0 && (

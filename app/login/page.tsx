@@ -28,7 +28,7 @@ export default function SignInPage() {
 
             if (supabaseError) {
                 if (supabaseError.message?.includes('Invalid login credentials') || supabaseError.code === 'invalid_credentials') {
-                    setError("Email hoặc mật khẩu không đúng. Nếu bạn chưa có tài khoản, vui lòng chạy: npm run create-user")
+                    setError("Email hoặc mật khẩu không đúng. Nếu bạn chưa có tài khoản")
                 } else {
                     setError(supabaseError.message || "Email hoặc mật khẩu không đúng")
                 }

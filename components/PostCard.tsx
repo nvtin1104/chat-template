@@ -13,7 +13,7 @@ interface PostCardProps {
         excerpt?: string | null
         coverImage?: string | null
         publishedAt?: Date | null
-        author: {
+        author?: {
             name?: string | null
         }
     }
@@ -44,7 +44,7 @@ export default function PostCard({ post }: PostCardProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>{post.author.name || "Admin"}</span>
+                        <span>{post.author?.name || "Admin"}</span>
                         {post.publishedAt && (
                             <span>
                                 {format(new Date(post.publishedAt), "dd MMM yyyy", { locale: vi })}

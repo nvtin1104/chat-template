@@ -53,6 +53,21 @@
   --popover-foreground: oklch(0.13 0.028 261.692);
   --primary: oklch(0.21 0.034 264.665);
   --primary-foreground: oklch(0.985 0.002 247.839);
+  
+  /* Color config từ database - sẽ được ghi đè bởi ColorThemeProvider */
+  --button: oklch(0.21 0.034 264.665);
+  --button-text: oklch(0.985 0.002 247.839);
+  --header-bg: oklch(1 0 0);
+  --header-text: oklch(0.13 0.028 261.692);
+  --home-gradient-from: oklch(1 0 0);
+  --home-gradient-to: oklch(0.967 0.003 264.542);
+  --home-text: oklch(0.13 0.028 261.692);
+  --chat-input-bg: oklch(1 0 0);
+  --chat-input-border: oklch(0.928 0.006 264.531);
+  --chat-input-text: oklch(0.13 0.028 261.692);
+  --chat-input-placeholder: oklch(0.551 0.027 264.364);
+  --chat-user-message-bg: oklch(0.967 0.003 264.542);
+  --chat-user-message-text: oklch(0.13 0.028 261.692);
   --secondary: oklch(0.967 0.003 264.542);
   --secondary-foreground: oklch(0.21 0.034 264.665);
   --muted: oklch(0.967 0.003 264.542);
@@ -118,5 +133,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Chat input placeholder color */
+  textarea::placeholder {
+    color: var(--chat-input-placeholder);
   }
 }
