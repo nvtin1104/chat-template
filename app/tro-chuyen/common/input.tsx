@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Send, Square } from "lucide-react"
+import { Send, Square, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 
@@ -15,6 +15,7 @@ interface ChatInputProps {
     placeholder?: string
     disabled?: boolean
     logoUrl?: string
+    siteLogo?: string | null
 }
 
 export function ChatInput({
@@ -24,30 +25,47 @@ export function ChatInput({
     placeholder = "Nhắn tin cho ChatGPT...",
     disabled = false,
     logoUrl,
+    siteLogo: siteLogoProp,
 }: ChatInputProps) {
     const [message, setMessage] = useState("")
     const [imageError, setImageError] = useState(false)
     const [siteLogo, setSiteLogo] = useState<string | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const displayLogo = imageError ? (siteLogo || "/icons/logo.png") : logoUrl
+    
+    // Use siteLogo from props or fetch it
+    const finalSiteLogo = siteLogoProp || siteLogo
 
-    // Fetch site logo from config
+    // Fetch site logo from config if not provided via props
     useEffect(() => {
-        const fetchSiteLogo = async () => {
-            try {
-                const res = await fetch("/api/public/site-info")
-                if (res.ok) {
-                    const data = await res.json()
-                    if (data.logo) {
-                        setSiteLogo(data.logo)
+        if (!siteLogoProp) {
+            const fetchSiteLogo = async () => {
+                try {
+                    const res = await fetch("/api/public/site-info")
+                    if (res.ok) {
+                        const data = await res.json()
+                        if (data.logo) {
+                            setSiteLogo(data.logo)
+                        }
                     }
+                } catch (error) {
+                    console.error("Failed to fetch site logo:", error)
                 }
-            } catch (error) {
-                console.error("Failed to fetch site logo:", error)
             }
+            fetchSiteLogo()
         }
-        fetchSiteLogo()
-    }, [])
+    }, [siteLogoProp])
+
+    // Get display logo with fallback: logoUrl -> siteLogo -> null (use icon)
+    const getDisplayLogo = (): string | null => {
+        if (imageError) {
+            // If logoUrl failed, try siteLogo
+            return finalSiteLogo || null
+        }
+        // Priority: logoUrl -> siteLogo -> null (will use icon)
+        return logoUrl || finalSiteLogo || null
+    }
+
+    const displayLogo = getDisplayLogo()
 
     // Reset image error when logoUrl changes
     useEffect(() => {
@@ -106,8 +124,8 @@ export function ChatInput({
                     }}
                 >
                     <div className="flex items-end gap-1.5 sm:gap-2 p-2 sm:p-3">
-                        {displayLogo && (
-                            <div className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 flex items-center justify-center rounded-full overflow-hidden bg-muted">
+                        <div className="shrink-0 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 flex items-center justify-center rounded-full overflow-hidden bg-muted">
+                            {displayLogo ? (
                                 <img
                                     src={displayLogo}
                                     alt="Chat Logo"
@@ -115,13 +133,20 @@ export function ChatInput({
                                     height={40}
                                     className="object-cover w-full h-full"
                                     onError={() => {
-                                        if (!imageError && displayLogo !== siteLogo && displayLogo !== "/icons/logo.png") {
+                                        if (!imageError) {
                                             setImageError(true)
                                         }
                                     }}
                                 />
-                            </div>
-                        )}
+                            ) : (
+                                <MessageCircle 
+                                    width={40} 
+                                    height={40} 
+                                    className="w-full h-full p-1.5"
+                                    style={{ color: 'currentColor' }}
+                                />
+                            )}
+                        </div>
 
                         <textarea
                             ref={textareaRef}

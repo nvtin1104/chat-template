@@ -81,8 +81,8 @@
 ### Bước 1: Clone Repository
 
 ```bash
-git clone https://github.com/nvtin1104/web-ai.git
-cd web-ai/client
+git clone https://github.com/nvtin1104/chat-template.git
+cd chat-template
 ```
 
 ### Bước 2: Cài đặt Dependencies
@@ -105,15 +105,15 @@ npm install
    - Set public: `true`
    - Allowed MIME types: `image/*`
 
-4. **Tạo file `.env.local`**:
+4. **Tạo file `.env`**:
 
 Copy từ `.example.env` và điền các giá trị:
 
 ```bash
-cp .example.env .env.local
+cp .example.env .env
 ```
 
-Hoặc tạo file `.env.local` với nội dung:
+Hoặc tạo file `.env` với nội dung:
 
 ```env
 # Supabase Configuration
@@ -122,6 +122,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # Admin display name (dùng cho init-admin script)
 ADMIN_NAME=Administrator
+ADMIN_PASSWORD=root123
+ADMIN_EMAIL=root@gmail.com
 
 # Bizino AI Configuration (optional)
 NEXT_PUBLIC_BIZINO_API=https://chat.bizino.ai/api
@@ -131,12 +133,14 @@ NEXT_PUBLIC_BIZINO_BOT_UUID=your-bot-uuid-here
 **Giải thích các biến**:
 - `NEXT_PUBLIC_SUPABASE_URL`: URL của Supabase project
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Public anon key từ Supabase
-- `ADMIN_NAME`: Tên hiển thị mặc định cho admin khi chạy script khởi tạo
+- `ADMIN_EMAIL`: Email của tài khoản admin (bắt buộc cho init-admin script)
+- `ADMIN_PASSWORD`: Mật khẩu của tài khoản admin (bắt buộc cho init-admin script)
+- `ADMIN_NAME`: Tên hiển thị mặc định cho admin khi chạy script khởi tạo (tùy chọn, mặc định: "Admin")
 - `NEXT_PUBLIC_BIZINO_API`: Endpoint Bizino AI (nếu dùng chatbot Bizino)
 - `NEXT_PUBLIC_BIZINO_BOT_UUID`: Bot UUID từ Bizino (tuỳ chọn)
 
 **Lưu ý bảo mật**:
-- ⚠️ Không commit file `.env.local` vào Git
+- ⚠️ Không commit file `.env` vào Git (đã được ignore trong `.gitignore`)
 
 ### Bước 4: Setup Database
 
@@ -171,8 +175,8 @@ npm run init-admin
 ```
 
 Script này sẽ:
-- Tạo user với email/password từ `.env.local`
-- Set role = `admin`
+- Tạo user với email/password từ `.env`
+- Set role = `superadmin`
 - Insert vào bảng `User`
 
 ### Bước 6: Khởi chạy Development Server
@@ -184,8 +188,8 @@ npm run dev
 Mở [http://localhost:3000](http://localhost:3000)
 
 **Login admin**:
-- Email: `admin@example.com` (hoặc giá trị trong `.env.local`)
-- Password: `admin123456`
+- Email: Giá trị của `ADMIN_EMAIL` trong file `.env` (mặc định: `root@gmail.com`)
+- Password: Giá trị của `ADMIN_PASSWORD` trong file `.env` (mặc định: `root123`)
 
 ## 📁 Cấu trúc dự án
 
@@ -277,7 +281,148 @@ client/
 ├── tsconfig.json              # TypeScript config
 ├── components.json            # shadcn/ui config
 ├── package.json
-└── .env.local                 # Environment variables (git-ignored)
+└── .env                       # Environment variables (git-ignored)
+```
+
+## 🚀 Automatic Admin Initialization
+
+### Tổng quan
+
+Dự án được cấu hình để **tự động tạo/cập nhật tài khoản admin** sau mỗi lần build trên Vercel thông qua npm `postbuild` hook.
+
+### Cách hoạt động
+
+1. **Khi Vercel build xong**, npm tự động chạy script `postbuild`:
+   ```json
+   {
+     "scripts": {
+       "build": "next build",
+       "postbuild": "npm run init-admin"  // Tự động chạy sau build
+     }
+   }
+   ```
+
+2. **Script `init-admin.ts` sẽ**:
+   - ✅ Đọc environment variables: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`
+   - ✅ Kiểm tra user đã tồn tại trong database chưa
+   - ✅ **Nếu chưa tồn tại**: Tạo user mới với role `superadmin`
+   - ✅ **Nếu đã tồn tại**: Cập nhật password và role thành `superadmin`
+   - ✅ Hash password bằng bcrypt (10 rounds) trước khi lưu
+   - ✅ Tạo user trong Supabase Auth (nếu có `SUPABASE_SERVICE_ROLE_KEY`)
+
+3. **Kết quả**:
+   - 🎉 Admin user được tạo/cập nhật tự động sau mỗi deploy
+   - 🔐 Password được hash an toàn
+   - 🚀 Có thể đăng nhập ngay sau khi deploy xong
+   - 📝 Không cần thao tác thủ công
+
+### Environment Variables cần thiết
+
+Để tính năng hoạt động, bạn cần set các biến sau trong Vercel:
+
+| Biến | Bắt buộc | Mô tả | Ví dụ |
+|------|----------|-------|-------|
+| `ADMIN_EMAIL` | ✅ Yes | Email của tài khoản admin | `admin@yourdomain.com` |
+| `ADMIN_PASSWORD` | ✅ Yes | Mật khẩu admin (sẽ được hash) | `SecurePassword123!` |
+| `ADMIN_NAME` | ❌ No | Tên hiển thị (mặc định: "Admin") | `Administrator` |
+| `SUPABASE_SERVICE_ROLE_KEY` | ⚠️ Recommended | Service role key để tạo user trong Supabase Auth | `eyJhbGci...` |
+
+**Lưu ý**:
+- Nếu không có `SUPABASE_SERVICE_ROLE_KEY`, user vẫn được tạo trong database nhưng sẽ được tạo trong Supabase Auth khi đăng nhập lần đầu
+- Password phải đủ mạnh (khuyến nghị: ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt)
+
+### Kiểm tra Admin đã được tạo
+
+#### 1. Xem Build Logs trên Vercel
+
+Vào deployment → `Build Logs`, tìm các dòng sau:
+
+**Thành công**:
+```
+Superadmin user updated in database: {
+  id: 'xxx-xxx-xxx',
+  email: 'admin@yourdomain.com',
+  name: 'Administrator',
+  role: 'superadmin'
+}
+Password updated in Supabase Auth
+```
+
+**Hoặc nếu user mới**:
+```
+User created in Supabase Auth: admin@yourdomain.com
+```
+
+**Warning (không fail build)**:
+```
+Warning: Could not create user in Supabase Auth: ...
+User will be created automatically on first login
+```
+
+#### 2. Kiểm tra trong Database
+
+Chạy SQL trong Supabase SQL Editor:
+```sql
+SELECT id, email, name, role, created_at 
+FROM "User" 
+WHERE email = 'admin@yourdomain.com';
+```
+
+#### 3. Đăng nhập thử
+
+1. Vào `/login` trên site đã deploy
+2. Nhập:
+   - **Email**: Giá trị của `ADMIN_EMAIL` trong Vercel
+   - **Password**: Giá trị của `ADMIN_PASSWORD` trong Vercel
+3. Nếu đăng nhập thành công → Admin đã được tạo đúng ✅
+
+### Troubleshooting
+
+#### Admin không được tạo sau deploy
+
+**Nguyên nhân có thể**:
+1. ❌ Thiếu environment variables (`ADMIN_EMAIL`, `ADMIN_PASSWORD`)
+2. ❌ Build failed trước khi chạy `postbuild`
+3. ❌ Database chưa được migrate (thiếu bảng `User`)
+4. ❌ `SUPABASE_SERVICE_ROLE_KEY` sai hoặc không có quyền
+
+**Giải pháp**:
+1. Kiểm tra Vercel Environment Variables đã set đầy đủ
+2. Xem Build Logs để tìm lỗi cụ thể
+3. Verify database đã được migrate đúng
+4. Redeploy để trigger lại `postbuild` script
+
+#### Không thể đăng nhập với admin
+
+**Nguyên nhân có thể**:
+1. ❌ Email/password không đúng với env vars
+2. ❌ User chưa được tạo trong Supabase Auth
+3. ❌ RLS policies chặn truy cập
+
+**Giải pháp**:
+1. Verify `ADMIN_EMAIL` và `ADMIN_PASSWORD` trong Vercel
+2. Kiểm tra user đã tồn tại trong Supabase Auth Dashboard
+3. Nếu chưa, đợi user được tạo tự động khi đăng nhập lần đầu
+4. Hoặc tạo manual trong Supabase Auth Dashboard
+
+### Chạy Manual (Local Development)
+
+Để chạy script init-admin local:
+
+```bash
+# Set environment variables
+export ADMIN_EMAIL="admin@example.com"
+export ADMIN_PASSWORD="SecurePassword123!"
+export ADMIN_NAME="Administrator"
+export SUPABASE_SERVICE_ROLE_KEY="your-service-key"
+
+# Chạy script
+npm run init-admin
+```
+
+Hoặc tạo file `.env` với các biến trên và chạy:
+```bash
+npm run init-admin
 ```
 
 ## 🌍 Deploy lên Vercel
@@ -294,7 +439,7 @@ client/
 2. **Đảm bảo các file cần thiết**:
    - ✅ `next.config.ts`
    - ✅ `package.json`
-   - ✅ `.gitignore` (đã ignore `.env.local`)
+   - ✅ `.gitignore` (đã ignore `.env`)
    - ✅ `vercel.json` (nếu có custom config)
 
 ### Bước 2: Setup Vercel Project
@@ -321,8 +466,11 @@ Trong Vercel Dashboard, vào `Settings` → `Environment Variables`, thêm:
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...  # Required for init-admin
 
-# Admin display name
+# Admin User Configuration (Required for auto-init)
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=SecurePassword123!
 ADMIN_NAME=Administrator
 
 # Bizino AI Configuration (optional)
@@ -336,9 +484,12 @@ NEXT_PUBLIC_BIZINO_BOT_UUID=your-production-bot-uuid
    - Copy từ Supabase Dashboard → Settings → API
    - `NEXT_PUBLIC_SUPABASE_URL`: Project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Project API keys → anon public
+   - `SUPABASE_SERVICE_ROLE_KEY`: **Bắt buộc** - Service role key (có quyền bypass RLS) để script `init-admin` có thể tạo user trong Supabase Auth
 
-2. **ADMIN_NAME**:
-   - Tên hiển thị mặc định cho tài khoản admin khi chạy script `init-admin`
+2. **Admin User Variables** (Bắt buộc cho auto-init):
+   - `ADMIN_EMAIL`: Email của tài khoản admin sẽ được tạo tự động
+   - `ADMIN_PASSWORD`: Mật khẩu cho tài khoản admin (nên dùng mật khẩu mạnh)
+   - `ADMIN_NAME`: Tên hiển thị mặc định cho tài khoản admin
 
 3. **Bizino AI** (Optional):
    - Chỉ cần nếu sử dụng Bizino AI chatbot
@@ -352,17 +503,18 @@ NEXT_PUBLIC_BIZINO_BOT_UUID=your-production-bot-uuid
 Set tất cả biến cho cả 3 environments, có thể dùng giá trị khác nhau.
 
 **Lưu ý bảo mật**:
-- ⚠️ `SUPABASE_SERVICE_ROLE_KEY` bypass RLS, chỉ dùng server-side
-- ⚠️ `NEXTAUTH_SECRET` phải unique và secure cho production
+- ⚠️ `SUPABASE_SERVICE_ROLE_KEY` bypass RLS, chỉ dùng server-side - **KHÔNG BAO GIỜ** expose ra client
+- ⚠️ `ADMIN_PASSWORD` phải là mật khẩu mạnh và bảo mật
 - ⚠️ Các biến `NEXT_PUBLIC_*` sẽ được expose ra client (public)
 - ⚠️ Không hardcode secrets trong code
 
 ### Bước 4: Deploy
 
-1. **Click Deploy** → Vercel sẽ:
+1. **Click Deploy** → Vercel sẽ tự động:
    - Clone repository
-   - Install dependencies
-   - Build Next.js app
+   - Install dependencies (`npm install`)
+   - Build Next.js app (`npm run build`)
+   - **Tự động chạy `postbuild` script** → `npm run init-admin` (tạo admin user)
    - Deploy lên CDN global
 
 2. **Đợi deploy hoàn tất** (~2-5 phút)
@@ -370,46 +522,91 @@ Set tất cả biến cho cả 3 environments, có thể dùng giá trị khác 
 3. **Kiểm tra deployment**:
    - Vào `Deployments` tab
    - Click vào deployment mới nhất
+   - Xem build logs để kiểm tra:
+     - ✅ Build thành công
+     - ✅ `postbuild` script chạy thành công
+     - ✅ Admin user được tạo (nếu chưa tồn tại)
    - Click `Visit` để mở site
 
-### Bước 5: Setup Database trên Production
+### Bước 5: Automatic Admin Initialization
+
+**🎉 Tính năng tự động khởi tạo Admin**
+
+Dự án đã được cấu hình để **tự động tạo tài khoản admin** sau mỗi lần build trên Vercel thông qua script `postbuild`.
+
+#### Cách hoạt động:
+
+1. **Khi Vercel build xong**, script `postbuild` sẽ tự động chạy:
+   ```json
+   {
+     "scripts": {
+       "build": "next build",
+       "postbuild": "npm run init-admin"
+     }
+   }
+   ```
+
+2. **Script `init-admin` sẽ**:
+   - Đọc các biến môi trường: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`
+   - Kiểm tra xem user với email đó đã tồn tại chưa
+   - Nếu **chưa tồn tại**: Tạo user mới trong database và Supabase Auth
+   - Nếu **đã tồn tại**: Cập nhật password và role thành `superadmin`
+   - Hash password bằng bcrypt trước khi lưu
+
+3. **Kết quả**:
+   - Tài khoản admin được tạo/cập nhật tự động
+   - Có thể đăng nhập ngay sau khi deploy xong
+   - Không cần thao tác thủ công
+
+#### Yêu cầu Environment Variables:
+
+Đảm bảo đã set các biến sau trong Vercel (xem Bước 3):
+- ✅ `ADMIN_EMAIL` - Email của admin
+- ✅ `ADMIN_PASSWORD` - Mật khẩu admin
+- ✅ `ADMIN_NAME` - Tên hiển thị (optional, mặc định: "Admin")
+- ✅ `SUPABASE_SERVICE_ROLE_KEY` - **Bắt buộc** để tạo user trong Supabase Auth
+
+#### Kiểm tra Admin đã được tạo:
+
+1. **Xem Build Logs trên Vercel**:
+   - Vào deployment → `Build Logs`
+   - Tìm dòng: `Superadmin user updated in database` hoặc `User created in Supabase Auth`
+   - Nếu có lỗi, sẽ hiển thị warning nhưng không fail build
+
+2. **Đăng nhập thử**:
+   - Vào `/login`
+   - Dùng `ADMIN_EMAIL` và `ADMIN_PASSWORD` đã set trong Vercel
+   - Nếu đăng nhập thành công → Admin đã được tạo đúng
+
+#### Lưu ý quan trọng:
+
+- ⚠️ **Script chỉ chạy khi build thành công** - Nếu build fail, script không chạy
+- ⚠️ **Script chạy mỗi lần deploy** - Nếu user đã tồn tại, sẽ cập nhật password và role
+- ⚠️ **Nếu thiếu `SUPABASE_SERVICE_ROLE_KEY`**: Script sẽ tạo user trong database nhưng không tạo trong Supabase Auth (user sẽ được tạo tự động khi đăng nhập lần đầu)
+- ⚠️ **Password được hash** - Không lưu plain text trong database
+
+### Bước 6: Setup Database trên Production
 
 1. **Chạy migrations** (nếu chưa):
    - Vào Supabase Dashboard
-   - SQL Editor → Execute các file migration
+   - SQL Editor → Execute các file migration theo thứ tự:
+     - `000_init_all_tables.sql` (hoặc các file migration riêng lẻ)
+     - `001_create_user_table.sql`
+     - `002_create_post_table.sql`
+     - `003_create_siteinfo_table.sql`
+     - ... (các migration khác)
 
-2. **Tạo Admin User**:
-   
-   **Option A: Sử dụng Supabase Dashboard**
-   ```sql
-   -- Execute trong SQL Editor
-   INSERT INTO "User" (id, email, name, role)
-   VALUES (
-     'admin-user-id-here',
-     'admin@yourdomain.com',
-     'Administrator',
-     'admin'
-   );
-   ```
-
-   **Option B: Chạy script local** (connect tới production DB):
-   ```bash
-   # Tạm set env variables cho production
-   export NEXT_PUBLIC_SUPABASE_URL="https://xxxxx.supabase.co"
-   export SUPABASE_SERVICE_ROLE_KEY="your-service-key"
-   export ADMIN_EMAIL="admin@yourdomain.com"
-   export ADMIN_PASSWORD="SecurePassword123!"
-   export ADMIN_NAME="Administrator"
-   
-   npm run init-admin
-   ```
+2. **Admin User đã được tạo tự động** (qua postbuild script):
+   - ✅ Không cần tạo thủ công nữa
+   - ✅ Script sẽ tự động chạy sau mỗi lần build
+   - ✅ Nếu muốn tạo lại, chỉ cần redeploy hoặc chạy `npm run init-admin` local
 
 3. **Seed dữ liệu mẫu** (optional):
-   - Tạo SiteInfo entry
+   - Tạo SiteInfo entry qua Admin Panel
    - Upload ảnh vào Storage bucket `images`
    - Tạo vài bài viết và slides mẫu
 
-### Bước 6: Cấu hình Domain (Optional)
+### Bước 7: Cấu hình Domain (Optional)
 
 1. **Thêm Custom Domain**:
    - Vercel Dashboard → `Settings` → `Domains`
@@ -427,14 +624,15 @@ Set tất cả biến cho cả 3 environments, có thể dùng giá trị khác 
 
 - ✅ Repository pushed to GitHub
 - ✅ Vercel project created với root directory = `client`
-- ✅ Environment variables configured
+- ✅ Environment variables configured (bao gồm `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`)
 - ✅ Supabase database migrated
-- ✅ Admin user created
 - ✅ Storage bucket `images` created và public
 - ✅ RLS policies enabled
 - ✅ First deployment successful
+- ✅ Build logs show `postbuild` script chạy thành công
+- ✅ Admin user được tạo tự động (kiểm tra trong build logs)
 - ✅ Site accessible at Vercel URL
-- ✅ Admin login working
+- ✅ Admin login working (dùng `ADMIN_EMAIL` và `ADMIN_PASSWORD` từ env vars)
 - ✅ Image upload working
 
 ## 🗄 Quản lý Database
@@ -599,9 +797,24 @@ psql -h db.xxxxx.supabase.co -U postgres -d postgres < backup.sql
 
 **Giải pháp**:
 - Verify admin user exists trong `User` table
-- Check email/password đúng
-- Kiểm tra role = `admin`
-- Try reset password qua Supabase Auth
+- Check email/password đúng với giá trị trong Vercel Environment Variables
+- Kiểm tra role = `superadmin` hoặc `admin`
+- Kiểm tra build logs trên Vercel xem `postbuild` script có chạy thành công không
+- Nếu user chưa được tạo, redeploy để trigger lại `postbuild` script
+- Try reset password qua Supabase Auth Dashboard
+- Verify `SUPABASE_SERVICE_ROLE_KEY` đúng và có quyền
+
+**Kiểm tra Admin User đã được tạo**:
+```sql
+-- Chạy trong Supabase SQL Editor
+SELECT id, email, name, role FROM "User" WHERE email = 'admin@yourdomain.com';
+```
+
+**Nếu user chưa tồn tại sau deploy**:
+1. Kiểm tra Vercel build logs có lỗi gì không
+2. Verify tất cả environment variables đã được set đúng
+3. Redeploy để trigger lại `postbuild` script
+4. Hoặc chạy manual: `npm run init-admin` local với production env vars
 
 ### Slides không hiển thị
 
@@ -617,16 +830,65 @@ psql -h db.xxxxx.supabase.co -U postgres -d postgres < backup.sql
 # Development
 npm run dev          # Start dev server (port 3000)
 npm run build        # Build production
+npm run postbuild    # Auto-run after build (chạy init-admin)
 npm run start        # Start production server
 npm run lint         # Run ESLint
 
 # Database
-npm run init-admin   # Create admin user
+npm run init-admin   # Create/update admin user
 npm run migrate      # Show migration SQL
 
 # Utilities
 npm run type-check   # TypeScript type checking
 ```
+
+### Script Details
+
+#### `npm run init-admin`
+
+Script tự động tạo/cập nhật tài khoản admin:
+
+**Chức năng**:
+- Tạo user mới trong database với role `superadmin` (nếu chưa tồn tại)
+- Cập nhật password và role cho user đã tồn tại
+- Tạo user trong Supabase Auth (nếu có `SUPABASE_SERVICE_ROLE_KEY`)
+- Hash password bằng bcrypt trước khi lưu
+
+**Environment Variables cần thiết**:
+- `ADMIN_EMAIL` - Email của admin (required)
+- `ADMIN_PASSWORD` - Mật khẩu admin (required)
+- `ADMIN_NAME` - Tên hiển thị (optional, default: "Admin")
+- `SUPABASE_SERVICE_ROLE_KEY` - Service role key (optional, để tạo user trong Supabase Auth)
+
+**Sử dụng**:
+```bash
+# Local development
+npm run init-admin
+
+# Trên Vercel (tự động chạy sau build)
+# Script được gọi tự động qua postbuild hook
+```
+
+**Output**:
+```
+Superadmin user updated in database: {
+  id: 'xxx',
+  email: 'admin@example.com',
+  name: 'Administrator',
+  role: 'superadmin'
+}
+Password updated in Supabase Auth
+```
+
+#### `npm run postbuild`
+
+Script tự động chạy sau khi `npm run build` hoàn thành. Trên Vercel, script này sẽ:
+1. Chạy sau khi build Next.js app thành công
+2. Tự động gọi `npm run init-admin`
+3. Tạo/cập nhật admin user với thông tin từ environment variables
+4. Không fail build nếu có warning (chỉ log)
+
+**Lưu ý**: Script này chỉ chạy khi build thành công. Nếu build fail, script không chạy.
 
 ## 🤝 Contributing
 

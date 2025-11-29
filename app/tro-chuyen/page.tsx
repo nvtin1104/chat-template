@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import DefaultChat from './common/DefaultChat';
 import MarkdownMessage from './common/MarkdownMessage';
 import ScrollToBottom from 'react-scroll-to-bottom';
-import { CopyIcon, SendIcon } from 'lucide-react';
+import { CopyIcon, SendIcon, MessageCircle } from 'lucide-react';
 import { DeletePopconfirm } from '@/components/custom-ui/delete-popconfirm';
 import { TypingLoadingPage } from './common/Loading';
 import ClosedChat from './common/ClosedChat';
@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 
 const ChatContainer = () => {
     const [botInfo, setBotInfo] = useState<any>(undefined);
-    const [chatHistory, setChatHistory] = useState([]);
+    const [chatHistory, setChatHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingChat, setLoadingChat] = useState(false);
     const [hasTriedLoad, setHasTriedLoad] = useState(false); // Track if we've attempted to load
@@ -114,20 +114,33 @@ const ChatContainer = () => {
     }
     useEffect(() => {
         handleStartChat();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    
+    // Force re-render when botInfo changes (Safari compatibility)
+    useEffect(() => {
+        // State change tracking for Safari compatibility
+    }, [botInfo, chatHistory]);
 
     const handleStartChat = async (payload: any = {}) => {
         try {
             setHasTriedLoad(true); // Mark that we've attempted to load
             const data = await startChat(payload);
+            
             // Only update state if data is valid
             if (data) {
-                setChatHistory(data?.histories?.reverse() || []);
+                // Safely handle histories - ensure it's an array
+                const histories = Array.isArray(data.histories) 
+                    ? [...data.histories].reverse() // Create new array before reverse
+                    : [];
+                
+                // Set both states - Safari may need both to be set together
                 setBotInfo(data);
+                setChatHistory(histories);
             } else {
                 // If data is null, set botInfo to null to show ClosedChat
                 setBotInfo(null);
-                console.warn("Failed to start chat - no data returned");
+                setChatHistory([]);
             }
             if (typeof window !== "undefined") {
                 try {
@@ -326,6 +339,50 @@ const ChatContainer = () => {
         // TODO: Implement stop generation logic if needed
         setLoading(false);
     }
+
+    // Helper function to get logo with fallback: botLogo -> siteLogo -> icon chat
+    const getLogoUrl = (botLogoUrl?: string): string | null => {
+        if (botLogoUrl) return botLogoUrl;
+        if (siteLogo) return siteLogo;
+        return null; // Return null to use icon instead
+    }
+
+    // Helper component for logo with fallback
+    const ChatLogo = ({ className = "rounded-full", width = 32, height = 32 }: { className?: string; width?: number; height?: number }) => {
+        const [logoError, setLogoError] = useState(false)
+        const logoUrl = getLogoUrl(botInfo?.setting?.logo_url);
+        
+        // Reset error when logoUrl changes
+        useEffect(() => {
+            setLogoError(false)
+        }, [logoUrl])
+        
+        // If no logo URL or error occurred, show icon
+        if (!logoUrl || logoError) {
+            return (
+                <div className={`${className} flex items-center justify-center bg-muted`} style={{ width, height }}>
+                    <MessageCircle 
+                        width={width * 0.7} 
+                        height={height * 0.7} 
+                        style={{ color: 'currentColor' }}
+                    />
+                </div>
+            )
+        }
+        
+        return (
+            <img 
+                src={logoUrl}
+                width={width} 
+                height={height} 
+                alt="Logo"
+                className={className}
+                onError={() => {
+                    setLogoError(true)
+                }}
+            />
+        )
+    }
     if (loadingChat) {
         return <TypingLoadingPage />;
     }
@@ -371,12 +428,18 @@ const ChatContainer = () => {
       text-align: left;
     }
   `}} />
-            <div className="flex flex-1 flex-col w-full scroll-hidden lg:px-[calc((100vw_-_310px)*0.3/2)]">
+            <div className="flex flex-1 flex-col w-full scroll-hidden lg:px-[calc((100vw_-_310px)*0.3/2)]" style={{ minHeight: 0 }}>
                 {chatHistory?.length > 0 ? (
-                    <ScrollToBottom className="h-0 flex-1 overflow-auto scroll-hidden p-2 min-h-0 pt-18 pb-[84px]">
-                        <div className='pb-[80px]'>
-                            {chatHistory.map((message: any, index: number) => (
-                                message.sender === 'user' ? (
+                    <div className="flex-1 overflow-auto scroll-hidden min-h-0" style={{ height: '100%', WebkitOverflowScrolling: 'touch' }}>
+                        <ScrollToBottom className="h-full p-2 pt-18 pb-[84px]">
+                            <div className='pb-[80px]'>
+                            {chatHistory.map((message: any, index: number) => {
+                                // Ensure message has required properties
+                                if (!message || typeof message.sender === 'undefined' || typeof message.message === 'undefined') {
+                                    return null;
+                                }
+                                
+                                return message.sender === 'user' ? (
                                     <div className="mb-4 px-[16px] text-left" key={index}>
                                         <div className="flex items-start justify-end">
                                             <div 
@@ -396,19 +459,7 @@ const ChatContainer = () => {
                                     <div className="mb-3 w-full border-0 bg-transparent" key={index}>
                                         <div className="pb-[4px] pt-[12px] flex gap-x-[12px] px-[16px] lg:mb-[10px] lg:gap-x-[16px]">
                                             <div className="conversation-header flex-start">
-                                                <img 
-                                                    src={botInfo?.setting?.logo_url || siteLogo || "/icons/logo.png"} 
-                                                    width={32} 
-                                                    height={32} 
-                                                    alt="Logo"
-                                                    className="rounded-full"
-                                                    onError={(e) => {
-                                                        const target = e.target as HTMLImageElement
-                                                        if (target.src !== siteLogo && target.src !== "/icons/logo.png") {
-                                                            target.src = siteLogo || "/icons/logo.png"
-                                                        }
-                                                    }}
-                                                />
+                                                <ChatLogo width={32} height={32} />
                                             </div>
                                             <div className=" flex max-w-[calc(100%-52px)] flex-grow flex-col space-y-2 bg-transparent lg:max-w-[calc(100%-56px)]">
                                                 <div className="w-full text-[17px] font-normal leading-[22px] text-gray-700">
@@ -439,23 +490,11 @@ const ChatContainer = () => {
                                             </div>
                                         </div>
                                     </div>
-                                )
-                            ))}
+                                );
+                            })}
                             {loading && (
                                 <div className="h-[80px] flex items-center gap-2 p-4">
-                                    <img 
-                                        src={botInfo?.setting?.logo_url || siteLogo || "/icons/logo.png"} 
-                                        width={32} 
-                                        height={32} 
-                                        alt="Logo" 
-                                        className="rounded-full"
-                                        onError={(e) => {
-                                            const target = e.target as HTMLImageElement
-                                            if (target.src !== siteLogo && target.src !== "/icons/logo.png") {
-                                                target.src = siteLogo || "/icons/logo.png"
-                                            }
-                                        }}
-                                    />
+                                    <ChatLogo width={32} height={32} />
                                     <div className="flex items-center gap-1 p-2 rounded-full bg-gray-200">
                                         <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                                         <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
@@ -463,9 +502,10 @@ const ChatContainer = () => {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                        <div ref={messagesEndRef} />
-                    </ScrollToBottom>
+                            </div>
+                            <div ref={messagesEndRef} />
+                        </ScrollToBottom>
+                    </div>
                 ) : (
                     <DefaultChat setPrompt={handleGetPrompt} config={botInfo} />
                 )}
@@ -477,7 +517,8 @@ const ChatContainer = () => {
                             isGenerating={loading}
                             placeholder={botInfo?.live_config?.message_placeholder || "Nhập câu hỏi của bạn ?"}
                             disabled={loadingChat}
-                            logoUrl={botInfo?.setting?.logo_url || "/icons/logo.png"}
+                            logoUrl={getLogoUrl(botInfo?.setting?.logo_url) || undefined}
+                            siteLogo={siteLogo}
                         />
                     </div>
                 </div>
