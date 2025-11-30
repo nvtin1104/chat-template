@@ -45,8 +45,10 @@ interface ImageFile {
 const FOLDERS = [
     { value: "posts", label: "Bài viết" },
     { value: "slides", label: "Slides" },
+    { value: "ckeditor", label: "CKEditor" },
     { value: "avatars", label: "Avatar" },
-    { value: "other", label: "Khác" },
+    { value: "features", label: "Tính năng" },
+    { value: "branding", label: "Branding" }, // Use "root" instead of "" to avoid Select validation error
 ]
 
 export default function AdminMediaPage() {
@@ -75,8 +77,10 @@ export default function AdminMediaPage() {
     const fetchImages = async () => {
         setLoading(true)
         try {
+            // Convert "root" to empty string for API call
+            const apiFolder = selectedFolder === "root" ? "" : selectedFolder
             const response = await fetch(
-                `/api/admin/images?bucket=images&prefix=${selectedFolder}&limit=100`
+                `/api/admin/images?bucket=images&prefix=${apiFolder}&limit=100`
             )
             if (response.ok) {
                 const data = await response.json()
@@ -123,7 +127,9 @@ export default function AdminMediaPage() {
                 const formData = new FormData()
                 formData.append("file", file)
                 formData.append("bucket", "images")
-                formData.append("folder", selectedFolder)
+                // Convert "root" to "posts" for upload (root is only for viewing all folders)
+                const uploadFolder = selectedFolder === "root" ? "posts" : selectedFolder
+                formData.append("folder", uploadFolder)
 
                 const response = await fetch("/api/admin/upload", {
                     method: "POST",

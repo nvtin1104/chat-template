@@ -245,15 +245,11 @@ export function UserListTable({ users, onDeleteUser, onUpdateUser, loading }: Us
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // Remove client-side pagination since we're using server-side pagination
+    // getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     state: {
       sorting,
-    },
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
     },
   })
 
@@ -361,36 +357,6 @@ export function UserListTable({ users, onDeleteUser, onUpdateUser, loading }: Us
           </TableBody>
         </Table>
       </div>
-      {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            Hiển thị {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} đến{" "}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}{" "}
-            trong tổng số {table.getFilteredRowModel().rows.length} người dùng
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Trước
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Sau
-            </Button>
-          </div>
-        </div>
-      )}
     </>
   )
 }

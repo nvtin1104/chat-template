@@ -108,8 +108,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link href="/">
-                <Image src={siteInfo.logo ?? ""} alt={siteInfo.title} width={32} height={32} />
+              <Link href="/" className="flex items-center gap-2">
+                {siteInfo.logo ? (
+                  <Image src={siteInfo.logo} alt={siteInfo.title} width={32} height={32} />
+                ) : null}
                 <span className="text-base font-semibold">{siteInfo.title}</span>
               </Link>
             </SidebarMenuButton>

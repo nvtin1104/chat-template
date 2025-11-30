@@ -8,16 +8,31 @@ import { useToast } from "@/components/ui/toast"
 import { getImageUrl } from "@/lib/image-utils"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface ImageUploadProps {
   value?: string
   onChange: (url: string) => void
   label?: string
   bucket?: string
+  /**
+   * Thư mục lưu ảnh trong Supabase Storage
+   * Mặc định: "posts" - dùng cho ảnh bìa bài viết
+   */
   folder?: string
   enableLibrary?: boolean
   previewHeight?: number
 }
+
+const FOLDER_OPTIONS = [
+  { value: "posts", label: "Bài viết" },
+  { value: "slides", label: "Slides" },
+  { value: "ckeditor", label: "CKEditor" },
+  { value: "avatars", label: "Avatar" },
+  { value: "features", label: "Tính năng" },
+  { value: "branding", label: "Branding" },
+]
+
 
 type LibraryImage = {
   name: string
@@ -31,10 +46,13 @@ export function ImageUpload({
   onChange,
   label = "Ảnh bìa",
   bucket = "images",
-  folder = "posts",
+  folder = "posts", // Folder mặc định cho ảnh bìa bài viết
   enableLibrary = false,
   previewHeight = 256,
 }: ImageUploadProps) {
+  const [selectedFolder, setSelectedFolder] = useState<string>(folder || "posts")
+  const [selectedLibraryFolder, setSelectedLibraryFolder] = useState<string>(selectedFolder)
+  
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(value ? getImageUrl(value) : null)
   const [libraryOpen, setLibraryOpen] = useState(false)
@@ -44,6 +62,19 @@ export function ImageUpload({
   const [libraryFetched, setLibraryFetched] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { showToast } = useToast()
+
+  // Sync selectedFolder với folder prop và cập nhật library folder
+  useEffect(() => {
+    if (folder) {
+      setSelectedFolder(folder)
+      setSelectedLibraryFolder(folder)
+    }
+  }, [folder])
+
+  // Cập nhật library folder khi selectedFolder thay đổi
+  useEffect(() => {
+    setSelectedLibraryFolder(selectedFolder)
+  }, [selectedFolder])
 
   useEffect(() => {
     setPreview(value ? getImageUrl(value) : null)
@@ -74,7 +105,7 @@ export function ImageUpload({
       const formData = new FormData()
       formData.append("file", file)
       formData.append("bucket", bucket)
-      formData.append("folder", folder)
+      formData.append("folder", selectedFolder)
 
       const response = await fetch("/api/admin/upload/image", {
         method: "POST",
@@ -111,13 +142,17 @@ export function ImageUpload({
     }
   }
 
-  const loadLibrary = async () => {
+  const loadLibrary = async (folderToLoad?: string) => {
+    const folder = folderToLoad ?? selectedLibraryFolder
+    // Convert "root" to empty string for API call
+    const apiFolder = folder === "root" ? "" : folder
     setLibraryLoading(true)
     setLibraryError(null)
+    setLibraryFetched(false)
     try {
       const params = new URLSearchParams({
         bucket,
-        prefix: folder,
+        prefix: apiFolder,
       })
       const response = await fetch(`/api/admin/images?${params.toString()}`)
       if (!response.ok) {
@@ -135,10 +170,16 @@ export function ImageUpload({
     }
   }
 
+  const handleFolderChange = (newFolder: string) => {
+    setSelectedLibraryFolder(newFolder)
+    setLibraryFetched(false) // Reset để load lại khi folder thay đổi
+    loadLibrary(newFolder)
+  }
+
   const handleLibraryToggle = (open: boolean) => {
     setLibraryOpen(open)
     if (open && !libraryFetched && !libraryLoading) {
-      loadLibrary()
+      loadLibrary(selectedLibraryFolder)
     }
   }
 
@@ -159,7 +200,21 @@ export function ImageUpload({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium">{label}</label>
+        <Select value={selectedFolder} onValueChange={setSelectedFolder} disabled={uploading}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FOLDER_OPTIONS.map((folderOption) => (
+              <SelectItem key={folderOption.value} value={folderOption.value}>
+                {folderOption.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="space-y-2">
         {preview ? (
           <div className="relative group">
@@ -226,30 +281,65 @@ export function ImageUpload({
               onClick={() => handleLibraryToggle(true)}
               disabled={libraryLoading}
             >
-              Thư viện Supabase
+              Thư viện Ảnh
             </Button>
             <Dialog open={libraryOpen} onOpenChange={handleLibraryToggle}>
               <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                   <DialogTitle>Chọn ảnh từ thư viện</DialogTitle>
                   <DialogDescription>
-                    Ảnh được lưu trong bucket {bucket}/{folder || "root"}
+                    Chọn folder để xem ảnh từ bucket {bucket}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-muted-foreground">
-                    Tổng số ảnh: {libraryImages.length}
-                  </p>
-                  <Button type="button" variant="ghost" size="sm" onClick={loadLibrary} disabled={libraryLoading}>
-                    {libraryLoading ? (
-                      <>
-                        <Spinner className="h-4 w-4 mr-2" />
-                        Đang tải...
-                      </>
-                    ) : (
-                      "Làm mới"
-                    )}
-                  </Button>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium whitespace-nowrap">Folder:</label>
+                    <Select value={selectedLibraryFolder} onValueChange={handleFolderChange} disabled={libraryLoading}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Chọn folder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FOLDER_OPTIONS.map((folderOption) => (
+                          <SelectItem key={folderOption.value} value={folderOption.value}>
+                            {folderOption.label}
+                            {folderOption.value && ` (${folderOption.value})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => loadLibrary(selectedLibraryFolder)} 
+                      disabled={libraryLoading}
+                      className="shrink-0"
+                    >
+                      {libraryLoading ? (
+                        <>
+                          <Spinner className="h-4 w-4 mr-2" />
+                          Đang tải...
+                        </>
+                      ) : (
+                        "Làm mới"
+                      )}
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Tổng số ảnh: {libraryImages.length}
+                      {selectedLibraryFolder && selectedLibraryFolder !== "root" && (
+                        <span className="ml-2 text-xs">
+                          (folder: {selectedLibraryFolder})
+                        </span>
+                      )}
+                      {selectedLibraryFolder === "root" && (
+                        <span className="ml-2 text-xs">
+                          (tất cả folders)
+                        </span>
+                      )}
+                    </p>
+                  </div>
                 </div>
                 {libraryError ? (
                   <p className="text-sm text-destructive">{libraryError}</p>

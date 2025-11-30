@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth-supabase"
-import { getPostById, updatePost, deletePost } from "@/lib/db"
+import { getPostById, updatePost, deletePost, checkSlugExists } from "@/lib/db"
 import { deletePostImages, extractImageUrlsFromHtml, deleteImageFromStorage } from "@/lib/storage-utils"
 
 export async function GET(
@@ -56,6 +56,17 @@ export async function PUT(
 
         const body = await request.json()
         const { title, slug, content, excerpt, coverImage, published } = body
+
+        // Check if slug is being updated and if it already exists
+        if (slug && slug !== currentPost.slug) {
+            const slugExists = await checkSlugExists(slug, resolvedParams.id)
+            if (slugExists) {
+                return NextResponse.json(
+                    { error: `Slug "${slug}" đã tồn tại. Vui lòng chọn slug khác.` },
+                    { status: 409 } // Conflict status code
+                )
+            }
+        }
 
         const updateData: any = {}
         if (title) updateData.title = title
@@ -115,10 +126,19 @@ export async function PUT(
             ...post,
             deletedImagesCount: deletedCount
         })
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating post:", error)
+        
+        // Handle duplicate slug error
+        if (error.message?.includes('đã tồn tại') || error.code === '23505') {
+            return NextResponse.json(
+                { error: error.message || "Slug đã tồn tại. Vui lòng chọn slug khác." },
+                { status: 409 }
+            )
+        }
+
         return NextResponse.json(
-            { error: "Failed to update post" },
+            { error: error.message || "Failed to update post" },
             { status: 500 }
         )
     }

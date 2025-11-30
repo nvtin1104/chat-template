@@ -28,7 +28,8 @@ export function ChatInput({
     siteLogo: siteLogoProp,
 }: ChatInputProps) {
     const [message, setMessage] = useState("")
-    const [imageError, setImageError] = useState(false)
+    const [siteLogoError, setSiteLogoError] = useState(false)
+    const [chatLogoError, setChatLogoError] = useState(false)
     const [siteLogo, setSiteLogo] = useState<string | null>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     
@@ -55,24 +56,31 @@ export function ChatInput({
         }
     }, [siteLogoProp])
 
-    // Get display logo with fallback: logoUrl -> siteLogo -> null (use icon)
+    // Reset errors when URLs change
+    useEffect(() => {
+        setSiteLogoError(false)
+    }, [finalSiteLogo])
+
+    useEffect(() => {
+        setChatLogoError(false)
+    }, [logoUrl])
+
+    // Priority: siteLogo -> chatLogo -> icon
     const getDisplayLogo = (): string | null => {
-        if (imageError) {
-            // If logoUrl failed, try siteLogo
-            return finalSiteLogo || null
+        // Priority 1: siteLogo (if available and no error)
+        if (finalSiteLogo && !siteLogoError) {
+            return finalSiteLogo
         }
-        // Priority: logoUrl -> siteLogo -> null (will use icon)
-        return logoUrl || finalSiteLogo || null
+        // Priority 2: chatLogo (if siteLogo failed or not available)
+        if (logoUrl && !chatLogoError) {
+            return logoUrl
+        }
+        // Priority 3: null (will show icon)
+        return null
     }
 
     const displayLogo = getDisplayLogo()
 
-    // Reset image error when logoUrl changes
-    useEffect(() => {
-        setImageError(false)
-    }, [logoUrl])
-
-    // Auto-resize textarea
     useEffect(() => {
         const textarea = textareaRef.current
         if (textarea) {
@@ -85,15 +93,13 @@ export function ChatInput({
         e.preventDefault()
         const trimmedMessage = message.trim()
         
-        // Validation
         if (!trimmedMessage) {
-            return // Don't submit empty messages
+            return
         }
         
-        // Max length validation
         const MAX_MESSAGE_LENGTH = 10000
         if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
-            return // Validation will be handled in parent component
+            return
         }
         
         if (!disabled && !isGenerating) {
@@ -133,8 +139,11 @@ export function ChatInput({
                                     height={40}
                                     className="object-cover w-full h-full"
                                     onError={() => {
-                                        if (!imageError) {
-                                            setImageError(true)
+                                        // Determine which logo failed and set appropriate error state
+                                        if (displayLogo === finalSiteLogo && !siteLogoError) {
+                                            setSiteLogoError(true)
+                                        } else if (displayLogo === logoUrl && !chatLogoError) {
+                                            setChatLogoError(true)
                                         }
                                     }}
                                 />

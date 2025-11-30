@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { Pagination } from "@/components/ui/pagination"
 import { useToast } from "@/components/ui/toast"
 import { Plus, Edit, Trash2 } from "lucide-react"
 import { format } from "date-fns"
@@ -47,24 +48,44 @@ export default function AdminPostsPage() {
     const [loading, setLoading] = useState(true)
     const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+    const itemsPerPage = 12
     const { showToast } = useToast()
 
     useEffect(() => {
-        fetchPosts()
-    }, [])
+        fetchPosts(currentPage)
+    }, [currentPage])
 
-    const fetchPosts = async () => {
+    const fetchPosts = async (page: number = 1) => {
+        setLoading(true)
         try {
-            const response = await fetch("/api/admin/posts/all")
+            const response = await fetch(`/api/admin/posts/all?page=${page}&limit=${itemsPerPage}`)
             if (response.ok) {
                 const data = await response.json()
-                setPosts(data)
+                // Check if response has pagination structure
+                if (data.posts && Array.isArray(data.posts)) {
+                    setPosts(data.posts)
+                    setTotalPages(data.totalPages || 1)
+                    setTotalItems(data.total || 0)
+                } else if (Array.isArray(data)) {
+                    // Fallback for non-paginated response
+                    setPosts(data)
+                    setTotalPages(1)
+                    setTotalItems(data.length)
+                }
             }
         } catch (error) {
             console.error("Error fetching posts:", error)
         } finally {
             setLoading(false)
         }
+    }
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     const handleDelete = async (id: string) => {
@@ -76,7 +97,14 @@ export default function AdminPostsPage() {
 
             if (response.ok) {
                 const result = await response.json()
-                setPosts(posts.filter((post) => post.id !== id))
+                // Refresh current page or go to previous page if current page becomes empty
+                const remainingPosts = posts.filter((post) => post.id !== id)
+                if (remainingPosts.length === 0 && currentPage > 1) {
+                    setCurrentPage(currentPage - 1)
+                } else {
+                    setPosts(remainingPosts)
+                    setTotalItems(totalItems - 1)
+                }
                 showToast(
                     "success",
                     `Đã xóa bài viết thành công${result.deletedImagesCount > 0 ? ` và ${result.deletedImagesCount} ảnh` : ""}`
@@ -186,6 +214,17 @@ export default function AdminPostsPage() {
                         </div>
                     )}
                 </>
+            )}
+
+            {!loading && totalPages > 1 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    className="mt-8"
+                />
             )}
 
             <ConfirmDialog

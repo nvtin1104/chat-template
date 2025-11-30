@@ -24,12 +24,11 @@ const ChatContainer = () => {
         }
     }, [chatHistory]);
 
-    // Fetch site logo from config
     useEffect(() => {
         const fetchSiteLogo = async () => {
             try {
                 const res = await fetch("/api/public/site-info", {
-                    credentials: "include", // Safari requires this to send cookies
+                    credentials: "include",
                 })
                 if (res.ok) {
                     const data = await res.json()
@@ -50,7 +49,7 @@ const ChatContainer = () => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
-                credentials: "include", // CRITICAL: Safari requires this to send/receive cookies
+                credentials: "include",
             });
             if (!res.ok) {
                 const errorText = await res.text();
@@ -60,7 +59,6 @@ const ChatContainer = () => {
             return data;
         } catch (error) {
             console.error("Error starting chat:", error);
-            // Return null instead of undefined to prevent errors
             return null;
         } finally {
             setLoadingChat(false);
@@ -72,7 +70,7 @@ const ChatContainer = () => {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
-                credentials: "include", // Safari requires this to send cookies
+                credentials: "include",
             });
 
             if (!res.ok) {
@@ -117,39 +115,32 @@ const ChatContainer = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
-    // Force re-render when botInfo changes (Safari compatibility)
     useEffect(() => {
         // State change tracking for Safari compatibility
     }, [botInfo, chatHistory]);
 
     const handleStartChat = async (payload: any = {}) => {
         try {
-            setHasTriedLoad(true); // Mark that we've attempted to load
+            setHasTriedLoad(true);
             const data = await startChat(payload);
             
-            // Only update state if data is valid
             if (data) {
-                // Safely handle histories - ensure it's an array
                 const histories = Array.isArray(data.histories) 
-                    ? [...data.histories].reverse() // Create new array before reverse
+                    ? [...data.histories].reverse()
                     : [];
                 
-                // Set both states - Safari may need both to be set together
                 setBotInfo(data);
                 setChatHistory(histories);
             } else {
-                // If data is null, set botInfo to null to show ClosedChat
                 setBotInfo(null);
                 setChatHistory([]);
             }
             if (typeof window !== "undefined") {
                 try {
-                    // Safari-compatible URL parsing with fallback
                     let url: URL;
                     try {
                         url = new URL(window.location.href);
                     } catch (e) {
-                        // Fallback for Safari compatibility
                         const baseUrl = window.location.origin + window.location.pathname;
                         url = new URL(baseUrl + window.location.search);
                     }
@@ -340,57 +331,72 @@ const ChatContainer = () => {
         setLoading(false);
     }
 
-    // Helper function to get logo with fallback: botLogo -> siteLogo -> icon chat
-    const getLogoUrl = (botLogoUrl?: string): string | null => {
-        if (botLogoUrl) return botLogoUrl;
-        if (siteLogo) return siteLogo;
-        return null; // Return null to use icon instead
-    }
-
-    // Helper component for logo with fallback
     const ChatLogo = ({ className = "rounded-full", width = 32, height = 32 }: { className?: string; width?: number; height?: number }) => {
-        const [logoError, setLogoError] = useState(false)
-        const logoUrl = getLogoUrl(botInfo?.setting?.logo_url);
+        const [chatLogoError, setChatLogoError] = useState(false)
+        const [siteLogoError, setSiteLogoError] = useState(false)
         
-        // Reset error when logoUrl changes
+        const chatLogoUrl = botInfo?.setting?.logo_url
+        const siteLogoUrl = siteLogo
+        
+        // Reset errors when URLs change
         useEffect(() => {
-            setLogoError(false)
-        }, [logoUrl])
+            setChatLogoError(false)
+        }, [chatLogoUrl])
         
-        // If no logo URL or error occurred, show icon
-        if (!logoUrl || logoError) {
+        useEffect(() => {
+            setSiteLogoError(false)
+        }, [siteLogoUrl])
+        
+        // Priority: siteLogo -> chatLogo -> icon
+        // Try siteLogo first
+        if (siteLogoUrl && !siteLogoError) {
             return (
-                <div className={`${className} flex items-center justify-center bg-muted`} style={{ width, height }}>
-                    <MessageCircle 
-                        width={width * 0.7} 
-                        height={height * 0.7} 
-                        style={{ color: 'currentColor' }}
-                    />
-                </div>
+                <img 
+                    src={siteLogoUrl}
+                    width={width} 
+                    height={height} 
+                    alt="Logo"
+                    className={className}
+                    onError={() => {
+                        setSiteLogoError(true)
+                    }}
+                />
             )
         }
         
+        // Fallback to chat logo if site logo failed or not available
+        if (chatLogoUrl && !chatLogoError) {
+            return (
+                <img 
+                    src={chatLogoUrl}
+                    width={width} 
+                    height={height} 
+                    alt="Logo"
+                    className={className}
+                    onError={() => {
+                        setChatLogoError(true)
+                    }}
+                />
+            )
+        }
+        
+        // Final fallback to icon
         return (
-            <img 
-                src={logoUrl}
-                width={width} 
-                height={height} 
-                alt="Logo"
-                className={className}
-                onError={() => {
-                    setLogoError(true)
-                }}
-            />
+            <div className={`${className} flex items-center justify-center bg-muted`} style={{ width, height }}>
+                <MessageCircle 
+                    width={width * 0.7} 
+                    height={height * 0.7} 
+                    style={{ color: 'currentColor' }}
+                />
+            </div>
         )
     }
     if (loadingChat) {
         return <TypingLoadingPage />;
     }
-    // Only show ClosedChat if we've tried to load and got no data (null)
     if (hasTriedLoad && botInfo === null && !loadingChat) {
         return <ClosedChat />;
     }
-    // Show loading if botInfo is still undefined (initial state before first load attempt)
     if (!hasTriedLoad || botInfo === undefined) {
         return <TypingLoadingPage />;
     }
@@ -434,7 +440,6 @@ const ChatContainer = () => {
                         <ScrollToBottom className="h-full p-2 pt-18 pb-[84px]">
                             <div className='pb-[80px]'>
                             {chatHistory.map((message: any, index: number) => {
-                                // Ensure message has required properties
                                 if (!message || typeof message.sender === 'undefined' || typeof message.message === 'undefined') {
                                     return null;
                                 }
@@ -517,7 +522,7 @@ const ChatContainer = () => {
                             isGenerating={loading}
                             placeholder={botInfo?.live_config?.message_placeholder || "Nhập câu hỏi của bạn ?"}
                             disabled={loadingChat}
-                            logoUrl={getLogoUrl(botInfo?.setting?.logo_url) || undefined}
+                            logoUrl={botInfo?.setting?.logo_url || undefined}
                             siteLogo={siteLogo}
                         />
                     </div>

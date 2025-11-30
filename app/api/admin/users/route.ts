@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server"
 import { requireAdmin, requireSuperadmin } from "@/lib/auth-supabase"
-import { createUser, getAllUsers } from "@/lib/db"
+import { createUser, getAllUsers, getUsersPaginated } from "@/lib/db"
 import bcrypt from "bcryptjs"
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         await requireAdmin()
 
-        const users = await getAllUsers()
+        const { searchParams } = new URL(request.url)
+        const page = parseInt(searchParams.get("page") || "1", 10)
+        const limit = parseInt(searchParams.get("limit") || "10", 10)
 
+        // If pagination params are provided, use paginated endpoint
+        if (searchParams.has("page") || searchParams.has("limit")) {
+            const result = await getUsersPaginated(page, limit)
+            return NextResponse.json(result)
+        }
+
+        // Otherwise return all users (for backward compatibility)
+        const users = await getAllUsers()
         return NextResponse.json(users)
     } catch (error) {
         console.error("Error fetching users:", error)

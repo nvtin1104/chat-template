@@ -216,6 +216,47 @@ export async function getAllUsers(): Promise<User[]> {
     }
 }
 
+export async function getUsersPaginated(page: number = 1, limit: number = 10): Promise<{ users: User[], total: number, totalPages: number }> {
+    try {
+        const supabase = await getSupabaseClient()
+        const from = (page - 1) * limit
+        const to = from + limit - 1
+
+        // Get total count
+        const { count, error: countError } = await supabase
+            .from('User')
+            .select('*', { count: 'exact', head: true })
+
+        if (countError) {
+            console.error('Error counting users:', countError)
+            return { users: [], total: 0, totalPages: 0 }
+        }
+
+        // Get paginated data
+        const { data, error } = await supabase
+            .from('User')
+            .select('id, name, email, role, createdAt')
+            .order('createdAt', { ascending: false })
+            .range(from, to)
+
+        if (error || !data) {
+            console.error('Error fetching users:', error)
+            return { users: [], total: count || 0, totalPages: 0 }
+        }
+
+        const totalPages = Math.ceil((count || 0) / limit)
+
+        return {
+            users: data as User[],
+            total: count || 0,
+            totalPages
+        }
+    } catch (error) {
+        console.error('Error fetching users:', error)
+        return { users: [], total: 0, totalPages: 0 }
+    }
+}
+
 // Posts
 export async function getPublishedPosts(limit?: number): Promise<Post[]> {
     try {
@@ -274,6 +315,52 @@ export async function getAllPosts(): Promise<Post[]> {
     }
 }
 
+export async function getPostsPaginated(page: number = 1, limit: number = 10): Promise<{ posts: Post[], total: number, totalPages: number }> {
+    try {
+        const supabase = await getSupabaseClient()
+        const from = (page - 1) * limit
+        const to = from + limit - 1
+
+        // Get total count
+        const { count, error: countError } = await supabase
+            .from('Post')
+            .select('*', { count: 'exact', head: true })
+
+        if (countError) {
+            console.error('Error counting posts:', countError)
+            return { posts: [], total: 0, totalPages: 0 }
+        }
+
+        // Get paginated data
+        const { data, error } = await supabase
+            .from('Post')
+            .select('id, title, slug, excerpt, coverImage, published, publishedAt, createdAt')
+            .order('createdAt', { ascending: false })
+            .range(from, to)
+
+        if (error || !data) {
+            console.error('Error fetching posts:', error)
+            return { posts: [], total: count || 0, totalPages: 0 }
+        }
+
+        const totalPages = Math.ceil((count || 0) / limit)
+
+        return {
+            posts: data.map((post: any) => ({
+                ...post,
+                publishedAt: post.publishedAt ? new Date(post.publishedAt) : null,
+                createdAt: new Date(post.createdAt),
+                updatedAt: new Date(post.updatedAt),
+            })) as Post[],
+            total: count || 0,
+            totalPages
+        }
+    } catch (error) {
+        console.error('Error fetching posts:', error)
+        return { posts: [], total: 0, totalPages: 0 }
+    }
+}
+
 export async function getPostById(id: string): Promise<Post | null> {
     try {
         const supabase = await getSupabaseClient()
@@ -323,6 +410,35 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
     }
 }
 
+// Check if slug exists (for any post, not just published)
+export async function checkSlugExists(slug: string, excludeId?: string): Promise<boolean> {
+    try {
+        const supabase = await getSupabaseClient()
+        let query = supabase
+            .from('Post')
+            .select('id')
+            .eq('slug', slug)
+            .limit(1)
+
+        // Exclude current post when updating
+        if (excludeId) {
+            query = query.neq('id', excludeId)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+            console.error('Error checking slug:', error)
+            return false
+        }
+
+        return data && data.length > 0
+    } catch (error) {
+        console.error('Error checking slug:', error)
+        return false
+    }
+}
+
 export async function createPost(postData: {
     title: string
     slug: string
@@ -333,6 +449,12 @@ export async function createPost(postData: {
     authorId: string
 }): Promise<Post | null> {
     try {
+        // Check if slug already exists
+        const slugExists = await checkSlugExists(postData.slug)
+        if (slugExists) {
+            throw new Error(`Slug "${postData.slug}" đã tồn tại. Vui lòng chọn slug khác.`)
+        }
+
         const supabase = await getSupabaseClient()
         const { data, error } = await supabase
             .from('Post')
@@ -349,21 +471,39 @@ export async function createPost(postData: {
             .select()
             .single()
 
-        if (error || !data) return null
+        if (error) {
+            // Handle duplicate key error specifically
+            if (error.code === '23505' && error.message?.includes('slug')) {
+                throw new Error(`Slug "${postData.slug}" đã tồn tại. Vui lòng chọn slug khác.`)
+            }
+            throw error
+        }
+
+        if (!data) return null
+
         return {
             ...data,
             publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
             createdAt: new Date(data.createdAt),
             updatedAt: new Date(data.updatedAt),
         } as Post
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating post:', error)
-        return null
+        // Re-throw with proper message
+        throw error
     }
 }
 
 export async function updatePost(id: string, postData: Partial<Post>): Promise<Post | null> {
     try {
+        // Check if slug is being updated and if it already exists
+        if (postData.slug) {
+            const slugExists = await checkSlugExists(postData.slug, id)
+            if (slugExists) {
+                throw new Error(`Slug "${postData.slug}" đã tồn tại. Vui lòng chọn slug khác.`)
+            }
+        }
+
         const supabase = await getSupabaseClient()
         const updateData: any = { ...postData }
 
@@ -378,16 +518,26 @@ export async function updatePost(id: string, postData: Partial<Post>): Promise<P
             .select()
             .single()
 
-        if (error || !data) return null
+        if (error) {
+            // Handle duplicate key error specifically
+            if (error.code === '23505' && error.message?.includes('slug')) {
+                throw new Error(`Slug "${postData.slug}" đã tồn tại. Vui lòng chọn slug khác.`)
+            }
+            throw error
+        }
+
+        if (!data) return null
+
         return {
             ...data,
             publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
             createdAt: new Date(data.createdAt),
             updatedAt: new Date(data.updatedAt),
         } as Post
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating post:', error)
-        return null
+        // Re-throw with proper message
+        throw error
     }
 }
 

@@ -1,24 +1,15 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth-supabase"
-import { getPublishedPosts, createPost, countPosts, countPublishedPosts } from "@/lib/db"
+import { getPublishedPosts, createPost, countPosts, countPublishedPosts, checkSlugExists } from "@/lib/db"
 
 export async function GET() {
     try {
-        console.log('[API /api/posts] GET request received')
-
-        const totalPosts = await countPosts()
-        const publishedPostsCount = await countPublishedPosts()
-        console.log('[API /api/posts] Total posts in DB:', totalPosts)
-        console.log('[API /api/posts] Published posts:', publishedPostsCount)
 
         const posts = await getPublishedPosts()
 
-        console.log('[API /api/posts] Returning posts:', posts.length)
-        console.log('[API /api/posts] Post titles:', posts.map(p => p.title))
-
         return NextResponse.json(posts)
     } catch (error) {
-        console.error("[API /api/posts] Error fetching posts:", error)
+        console.error("Error fetching posts:", error)
         return NextResponse.json(
             { error: "Failed to fetch posts" },
             { status: 500 }
@@ -40,6 +31,15 @@ export async function POST(request: Request) {
             )
         }
 
+        // Check if slug already exists before creating
+        const slugExists = await checkSlugExists(slug)
+        if (slugExists) {
+            return NextResponse.json(
+                { error: `Slug "${slug}" đã tồn tại. Vui lòng chọn slug khác.` },
+                { status: 409 } // Conflict status code
+            )
+        }
+
         const post = await createPost({
             title,
             slug,
@@ -58,10 +58,19 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(post)
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating post:", error)
+        
+        // Handle duplicate slug error
+        if (error.message?.includes('đã tồn tại') || error.code === '23505') {
+            return NextResponse.json(
+                { error: error.message || "Slug đã tồn tại. Vui lòng chọn slug khác." },
+                { status: 409 }
+            )
+        }
+
         return NextResponse.json(
-            { error: "Failed to create post" },
+            { error: error.message || "Failed to create post" },
             { status: 500 }
         )
     }
