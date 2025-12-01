@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAdmin, requireSuperadmin } from "@/lib/auth-supabase"
 import { createUser, getAllUsers, getUsersPaginated } from "@/lib/db"
+import { createSupabaseAdminClient } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 
 export async function GET(request: Request) {
@@ -11,13 +12,11 @@ export async function GET(request: Request) {
         const page = parseInt(searchParams.get("page") || "1", 10)
         const limit = parseInt(searchParams.get("limit") || "10", 10)
 
-        // If pagination params are provided, use paginated endpoint
         if (searchParams.has("page") || searchParams.has("limit")) {
             const result = await getUsersPaginated(page, limit)
             return NextResponse.json(result)
         }
 
-        // Otherwise return all users (for backward compatibility)
         const users = await getAllUsers()
         return NextResponse.json(users)
     } catch (error) {
@@ -34,8 +33,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         await requireSuperadmin()
-        console.log("Creating user")
-
         const { name = "admin", email, password, role = "admin" } = await request.json()
         if (!email || !password) {
             return NextResponse.json(
@@ -45,15 +42,43 @@ export async function POST(request: Request) {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
+        
         const user = await createUser({
             email,
             name,
             password: hashedPassword,
             role,
         })
+
+        if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            try {
+                const supabaseAdmin = createSupabaseAdminClient()
+                
+                const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+                const existingAuthUser = existingUsers?.users.find(u => u.email === email)
+
+                if (existingAuthUser) {
+                    await supabaseAdmin.auth.admin.updateUserById(existingAuthUser.id, { password })
+                } else {
+                    const { error: authError } = await supabaseAdmin.auth.admin.createUser({
+                        email,
+                        password,
+                        email_confirm: true,
+                    })
+
+                    if (authError) {
+                        console.warn("Warning: Could not create user in Supabase Auth:", authError.message)
+                    }
+                }
+            } catch (authError) {
+                console.warn("Warning: Could not create user in Supabase Auth:", authError)
+            }
+        } else {
+            console.warn("Warning: SUPABASE_SERVICE_ROLE_KEY not set - user will be created in Supabase Auth on first login")
+        }
+
         return NextResponse.json(user, { status: 201 })
     } catch (error: any) {
-
         const message = error?.message || "Failed to create user"
         const status = message.includes("Email đã tồn tại") ? 409 : 500
         console.log(message, status, 'message, status')

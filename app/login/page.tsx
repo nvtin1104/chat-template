@@ -39,11 +39,21 @@ export default function SignInPage() {
                 setError("Đăng nhập thất bại. Vui lòng thử lại.")
                 return
             }
-            console.log(data.user, 'data.user')
 
-            if (data.user.role === 'admin' || data.user.role === 'superadmin') {
-                router.push("/admin")
-            } else {
+            try {
+                const userRes = await fetch("/api/auth/user")
+                if (userRes.ok) {
+                    const userData = await userRes.json()
+                    if (userData?.role === 'admin' || userData?.role === 'superadmin') {
+                        router.push("/admin")
+                    } else {
+                        router.push("/")
+                    }
+                } else {
+                    router.push("/")
+                }
+            } catch (error) {
+                console.error("Error fetching user data:", error)
                 router.push("/")
             }
 

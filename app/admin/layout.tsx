@@ -1,14 +1,25 @@
+import { redirect } from "next/navigation"
 import { AppSidebar } from "@/components/admin/app-sidebar"
 import { SiteHeader } from "@/components/admin/site-header"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
+import { requireAdmin } from "@/lib/auth-supabase"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 export const runtime = "nodejs"
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  try {
+    // Kiểm tra authentication và admin role
+    await requireAdmin()
+  } catch (error) {
+    // Nếu chưa đăng nhập hoặc không phải admin, redirect về trang đăng nhập
+    redirect("/login")
+  }
+
   return (
     <SidebarProvider
       style={

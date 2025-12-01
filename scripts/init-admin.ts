@@ -22,12 +22,6 @@ async function main() {
             password: hashedPassword,
             role: "superadmin",
         })
-        console.log("Superadmin user updated in database:", {
-            id: user?.id,
-            email: user?.email,
-            name: user?.name,
-            role: user?.role,
-        })
     } else {
         user = await createUser({
             email,

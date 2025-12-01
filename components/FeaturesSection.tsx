@@ -29,11 +29,11 @@ export default function FeaturesSection() {
             }}
         >
             <div className="container mx-auto">
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="flex flex-wrap justify-center items-stretch gap-6">
                     {features.map((feature) => (
                         <article
                             key={feature.id}
-                            className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex flex-col h-full"
+                            className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow flex flex-col w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)] max-w-sm"
                         >
                             <div className="flex items-start gap-4 mb-4">
                                 {feature.icon?.startsWith('http') ? (
